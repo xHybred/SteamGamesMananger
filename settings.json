@@ -1,0 +1,15 @@
+{
+  "sources": {
+    "epic": true,
+    "gog": true,
+    "xbox": false,
+    "desktop": true
+  },
+  "view": "list",
+  "density": "normal",
+  "artwork": true,
+  "overwrite": true,
+  "force": false,
+  "api_key": "",
+  "hidden": []
+}

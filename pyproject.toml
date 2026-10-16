@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "steam-games-manager"
+version = "1.0.0"
+description = "Detect non-Steam games (Epic, GOG, Xbox/UWP), create Steam shortcuts, fetch SteamGridDB artwork."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "requests>=2.31",
+    "vdf>=3.4",
+    "psutil>=5.9",
+    "customtkinter>=5.2",
+    "pillow>=10.0",
+    "epicstore-api>=0.2",
+    "cloudscraper>=1.2",
+]
+[project.optional-dependencies]
+dev = ["pytest>=7", "mypy>=1.0"]
+
+[project.scripts]
+steam-games-manager = "steam_games_manager.main:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["steam_games_manager*"]

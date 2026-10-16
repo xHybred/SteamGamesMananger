@@ -1,0 +1,88 @@
+Metadata-Version: 2.4
+Name: steam-games-manager
+Version: 1.0.0
+Summary: Detect non-Steam games (Epic, GOG, Xbox/UWP), create Steam shortcuts, fetch SteamGridDB artwork.
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: requests>=2.31
+Requires-Dist: vdf>=3.4
+Requires-Dist: psutil>=5.9
+Requires-Dist: customtkinter>=5.2
+Requires-Dist: pillow>=10.0
+Requires-Dist: epicstore-api>=0.2
+Requires-Dist: cloudscraper>=1.2
+Provides-Extra: dev
+Requires-Dist: pytest>=7; extra == "dev"
+Requires-Dist: mypy>=1.0; extra == "dev"
+
+# Steam Games Manager
+# Automatically import Epic / GOG / Xbox games into Steam as non-Steam shortcuts
+# with SteamGridDB artwork.
+
+## Request-body review (errors / inconsistencies fixed)
+
+| # | Issue in original brief | Resolution implemented |
+|---|---|---|
+| 1 | Epic `LaunchOptions` given as `-com.epicgames.launcher://apps/...` (leading dash) and "`Exe` = binary **or** protocol URL". | `Exe` must always be a filesystem executable. Fixed to `Exe=<EpicGamesLauncher.exe>`, `LaunchOptions=com.epicgames.launcher://apps/<AppName>?action=launch&silent=true` (no leading `-`). Code: `scanners/epic.py:build_epic_shortcut`. |
+| 2 | GOG flags `/gameId=<ID> /command=runGame`. | Galaxy expects `/command=runGame /gameId=<ID>`. Both orders work, but canonical order implemented: `scanners/gog.py`. |
+| 3 | Xbox `Exe = explorer.exe shell:AppsFolder\...` conflated. | Split correctly: `Exe=C:\Windows\explorer.exe`, `LaunchOptions=shell:AppsFolder\<FamilyName>!<AppId>`. Code: `scanners/xbox.py`. |
+| 4 | Grid naming `<AppID>p.jpg / <AppID>_hero.jpg / <AppID>_logo.png / <AppID>.ico`. | First three are correct Steam grid names. `<AppID>.ico` is **not** a grid file — icon lives wherever you cache it and `shortcuts.vdf → icon` points at it. Implemented: grid files go to `config/grid/`, icon cached to `config/grid/<appid>.ico` (also accepted by Steam) and referenced absolutely. Code: `artwork/steamgriddb.py`, `vdf_handler/appid.py`. |
+| 5 | "Calculate AppID using CRC32/SHA1". | SHA1 is not used. Canonical algorithm is `appid = crc32(exe + appname) | 0x80000000` (unsigned 32-bit). Implemented + unit-verified in `vdf_handler/appid.py`. |
+| 6 | `vdf` vs `steam-vdf`, binary safety, Steam-running guard. | Wrapper prefers installed `vdf` package (`binary_loads/dumps`), falls back to bundled pure-Python `binary_vdf.py`. Every write makes a timestamped `.bak`, checks `steam.exe` via `psutil` → `tasklist` → `pgrep`. Code: `vdf_handler/shortcuts.py`, `utils/process.py`. |
+| 7 | Cross-platform claim vs Win-only sources (registry, UWP, PROGRAMDATA). | All scanners degrade gracefully on Linux: return `[]` with a warning; Proton path resolution helper included in `config.py`. |
+| 8 | `icon` field casing. | Brief is correct: VDF key is lowercase `icon`, rest CamelCase. Preserved exactly. |
+
+## File structure
+
+```
+steam_games_manager/
+    __init__.py
+    __main__.py
+    main.py              # CLI entry (argparse)
+    config.py            # Steam path / userdata / SteamID resolution
+    models.py            # GameInfo dataclass
+    scanners/
+        __init__.py
+        base.py          # Scanner protocol + helpers
+        epic.py          # %PROGRAMDATA%\Epic\...\Manifests\*.item
+        gog.py           # registry HKLM\...\GOG.com\Games + galaxy-2.0.db
+        xbox.py          # Get-AppxPackage via PowerShell
+    vdf_handler/
+        __init__.py
+        appid.py         # CRC32 shortcut AppID
+        binary_vdf.py    # dependency-free binary VDF codec (fallback)
+        shortcuts.py     # load/merge/write shortcuts.vdf safely
+    artwork/
+        __init__.py
+        steamgriddb.py   # search + download grids/heros/logos/icons
+    utils/
+        __init__.py
+        process.py       # is_steam_running()
+        files.py         # backup, atomic write, quoting
+tests/
+    test_appid.py
+    test_binary_vdf.py
+    test_epic.py
+requirements.txt
+README.md  (this file)
+```
+
+## Usage
+
+```powershell
+pip install -e .
+# or
+pip install -r requirements.txt
+
+# Dry run — scan only
+python -m steam_games_manager --dry-run --verbose
+
+# Full import with artwork (will prompt for SteamGridDB key if omitted)
+python -m steam_games_manager --api-key SGDB_KEY --launchers epic,gog,xbox
+
+# Non-interactive, specific user, force overwrite without Steam-running abort
+python -m steam_games_manager --user-id 12345678 --no-prompt --force
+```
+
+Steam must be **closed** before writing. The tool aborts if `steam.exe`
+is running unless `--force` is passed.
