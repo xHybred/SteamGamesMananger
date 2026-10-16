@@ -6,6 +6,8 @@ SteamGridDB key required.
 
 ![Library view](docs/images/librarylist.png)
 
+![Library view](docs/images/librarygrid.png)
+
 ## What it does
 
 - Scans every major PC launcher on your machine and lists the games it finds.
