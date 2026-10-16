@@ -16,6 +16,7 @@ SteamGridDB key required.
 - Fetches artwork automatically: each launcher's own cached art first,
   then keyless catalog lookups, with SteamGridDB as an optional upgrade.
 - Remembers what's already imported.
+- Some games require extra services or launchers to start otherwise authentication fails. SGM applies advanced shortcuts so games that traditional don't work run.
 
 ## Supported launchers
 
