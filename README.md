@@ -4,7 +4,7 @@ Bring your Epic, GOG, Xbox, Ubisoft, EA, and Battle.net games into Steam as
 non-Steam shortcuts with proper cover art, banners, logos, and icons, no
 SteamGridDB key required.
 
-![Library view](docs/images/library.png)
+![Library view](docs/images/librarylist.png)
 
 ## What it does
 
