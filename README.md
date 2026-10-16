@@ -4,7 +4,11 @@ Bring your Epic, GOG, Xbox, Ubisoft, EA, and Battle.net games into Steam as
 non-Steam shortcuts with proper cover art, banners, logos, and icons, no
 SteamGridDB key required.
 
-href="https://github.com/xHybred/SteamGamesMananger/releases"><img alt="Github Release"
+<p align="center">
+    <a href="https://github.com/xHybred/SteamGamesMananger/releases">
+        <img alt="GitHub Release" src="https://img.shields.io/github/v/release/xHybred/SteamGamesMananger?label=release">
+    </a>
+</p>
 
 ![Library view](docs/images/librarylist.png)
 
