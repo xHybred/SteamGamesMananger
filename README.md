@@ -1,7 +1,7 @@
 # Steam Games Manager
 
 Bring your Epic, GOG, Xbox, Ubisoft, EA, and Battle.net games into Steam as
-non-Steam shortcuts — with proper cover art, banners, logos, and icons, no
+non-Steam shortcuts with proper cover art, banners, logos, and icons, no
 SteamGridDB key required.
 
 ![Library view](docs/images/library.png)
@@ -13,8 +13,7 @@ SteamGridDB key required.
   backed up before every write.
 - Fetches artwork automatically: each launcher's own cached art first,
   then keyless catalog lookups, with SteamGridDB as an optional upgrade.
-- Refuses to write while Steam is running, unless you explicitly force it.
-- Remembers what's already imported, so re-runs only touch what's new.
+- Remembers what's already imported.
 
 ## Supported launchers
 
@@ -38,7 +37,7 @@ of being stretched.
 
 ## Quick start
 
-Download `SteamGamesManager.exe` from Releases, close Steam, and run it.
+Download `SGM.zip` from Releases, close Steam, and run it.
 Pick your launchers at the bottom, click **+** on a game (or **Add All New**),
 then restart Steam.
 
