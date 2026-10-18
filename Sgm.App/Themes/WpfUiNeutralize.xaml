@@ -1,0 +1,37 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- WPF-UI's ControlsDictionary ships Fluent implicit styles for several *base* WPF
+         control types. This app deliberately keeps its own custom visuals for those
+         controls, so we shadow the Fluent implicit styles with empty ones to restore the
+         stock WPF appearance. This file is merged after WPF-UI's dictionaries and before
+         this app's own Controls.xaml (which still wins where it defines matching styles).
+
+         WPF-UI's own named controls (Wpf.Ui.Controls.*, e.g. ui:Button, ui:TextBox,
+         ui:Card, ui:ProgressRing) are distinct types and remain fully styled/themed. -->
+
+    <!-- Shell / containers -->
+    <Style TargetType="Window" />
+    <Style TargetType="ScrollViewer" />
+    <Style TargetType="ScrollBar" />
+    <Style TargetType="Separator" />
+    <Style TargetType="Frame" />
+    <Style TargetType="Page" />
+
+    <!-- Lists -->
+    <Style TargetType="ListBox" />
+    <Style TargetType="ListBoxItem" />
+
+    <!-- Text -->
+    <Style TargetType="TextBlock" />
+    <Style TargetType="Label" />
+
+    <!-- Inputs / indicators we keep native until (and unless) migrated to a ui: control -->
+    <Style TargetType="ProgressBar" />
+    <Style TargetType="PasswordBox" />
+    <Style TargetType="RepeatButton" />
+
+    <!-- Popups -->
+    <Style TargetType="ToolTip" />
+
+</ResourceDictionary>

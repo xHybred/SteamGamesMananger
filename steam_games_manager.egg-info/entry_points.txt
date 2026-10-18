@@ -1,2 +1,0 @@
-[console_scripts]
-steam-games-manager = steam_games_manager.main:main

@@ -1,0 +1,12 @@
+C:\ToolProjects\SGM-DeepSeekRecode\Sgm.Core\obj\Debug\net10.0-windows\Sgm.Core.csproj.AssemblyReference.cache
+C:\ToolProjects\SGM-DeepSeekRecode\Sgm.Core\obj\Debug\net10.0-windows\Sgm.Core.GeneratedMSBuildEditorConfig.editorconfig
+C:\ToolProjects\SGM-DeepSeekRecode\Sgm.Core\obj\Debug\net10.0-windows\Sgm.Core.AssemblyInfoInputs.cache
+C:\ToolProjects\SGM-DeepSeekRecode\Sgm.Core\obj\Debug\net10.0-windows\Sgm.Core.AssemblyInfo.cs
+C:\ToolProjects\SGM-DeepSeekRecode\Sgm.Core\obj\Debug\net10.0-windows\Sgm.Core.csproj.CoreCompileInputs.cache
+C:\ToolProjects\SGM-DeepSeekRecode\Sgm.Core\bin\Debug\net10.0-windows\Sgm.Core.deps.json
+C:\ToolProjects\SGM-DeepSeekRecode\Sgm.Core\bin\Debug\net10.0-windows\Sgm.Core.dll
+C:\ToolProjects\SGM-DeepSeekRecode\Sgm.Core\bin\Debug\net10.0-windows\Sgm.Core.pdb
+C:\ToolProjects\SGM-DeepSeekRecode\Sgm.Core\obj\Debug\net10.0-windows\Sgm.Core.dll
+C:\ToolProjects\SGM-DeepSeekRecode\Sgm.Core\obj\Debug\net10.0-windows\refint\Sgm.Core.dll
+C:\ToolProjects\SGM-DeepSeekRecode\Sgm.Core\obj\Debug\net10.0-windows\Sgm.Core.pdb
+C:\ToolProjects\SGM-DeepSeekRecode\Sgm.Core\obj\Debug\net10.0-windows\ref\Sgm.Core.dll

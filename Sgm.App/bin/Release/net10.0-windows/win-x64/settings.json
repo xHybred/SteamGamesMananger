@@ -1,0 +1,19 @@
+{
+  "sources": {
+    "epic": true,
+    "gog": true,
+    "xbox": true,
+    "ubisoft": true,
+    "ea": true,
+    "battlenet": true,
+    "desktop": true
+  },
+  "view": "grid",
+  "density": "normal",
+  "artwork": true,
+  "overwrite": true,
+  "force": false,
+  "api_key": "",
+  "theme": "steam",
+  "hidden": []
+}

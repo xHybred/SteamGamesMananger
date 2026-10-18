@@ -1,0 +1,76 @@
+<UserControl x:Class="Sgm.App.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <Grid Margin="22,16">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <StackPanel Grid.Row="0" Margin="0,0,0,14">
+                <TextBlock Style="{StaticResource PageTitle}" Text="Settings" />
+                <TextBlock Style="{StaticResource MutedText}" Margin="0,2,0,0"
+                           Text="Artwork sources, write behaviour, and hidden games." />
+            </StackPanel>
+
+            <!-- SteamGridDB key -->
+            <ui:Card Grid.Row="1" Style="{StaticResource SgmCard}" Margin="0,0,0,12">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource SectionTitle}" Text="SteamGridDB API key" />
+                    <TextBlock Style="{StaticResource SmallMutedText}" Margin="0,2,0,8" TextWrapping="Wrap"
+                               Text="Optional. Without a key the app uses automatic store artwork (Epic, GOG, Steam). A key adds custom covers, banners and logos." />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ui:PasswordBox x:Name="ApiKeyBox" Grid.Column="0" Style="{StaticResource SgmPasswordBox}"
+                                        PlaceholderText="Paste your SteamGridDB API key"
+                                        PasswordChanged="OnApiKeyChanged" />
+                        <ui:Button Grid.Column="1" Style="{StaticResource SgmPrimaryButton}" Height="32" Width="110"
+                                   Margin="8,0,0,0" Content="Validate" Command="{Binding ValidateCommand}" />
+                    </Grid>
+                    <TextBlock Style="{StaticResource SmallMutedText}" Margin="0,6,0,0"
+                               Foreground="{DynamicResource LinkBrush}" Text="{Binding KeyState}" />
+                </StackPanel>
+            </ui:Card>
+
+            <!-- Options -->
+            <ui:Card Grid.Row="2" Style="{StaticResource SgmCard}" Margin="0,0,0,12">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource SectionTitle}" Text="Write behaviour" Margin="0,0,0,10" />
+                    <CheckBox Style="{StaticResource SgmCheckBox}" Margin="0,0,0,8"
+                              IsChecked="{Binding DownloadArtwork, Mode=TwoWay}"
+                              Content="Download artwork automatically" />
+                    <CheckBox Style="{StaticResource SgmCheckBox}" Margin="0,0,0,8"
+                              IsChecked="{Binding OverwriteShortcuts, Mode=TwoWay}"
+                              Content="Overwrite existing shortcuts for the same games" />
+                    <CheckBox Style="{StaticResource SgmCheckBox}"
+                              IsChecked="{Binding WriteWhileSteamRunning, Mode=TwoWay}"
+                              Content="Write even if Steam is running (Steam must be restarted after the game is added)" />
+                </StackPanel>
+            </ui:Card>
+
+            <!-- Hidden -->
+            <ui:Card Grid.Row="3" Style="{StaticResource SgmCard}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                        <TextBlock Style="{StaticResource SectionTitle}" Text="{Binding HiddenCountText}" />
+                        <TextBlock Style="{StaticResource SmallMutedText}" Margin="0,2,0,0" TextWrapping="Wrap"
+                                   Text="Hidden games are excluded from the library until restored." />
+                    </StackPanel>
+                    <ui:Button Grid.Column="1" Style="{StaticResource SgmSecondaryButton}" Height="34" VerticalAlignment="Center"
+                               Content="Unhide All" Command="{Binding UnhideAllCommand}" />
+                </Grid>
+            </ui:Card>
+        </Grid>
+    </ScrollViewer>
+</UserControl>
