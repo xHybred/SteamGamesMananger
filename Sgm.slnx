@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="Sgm.App/Sgm.App.csproj" />
+  <Project Path="Sgm.Cli/Sgm.Cli.csproj" />
+  <Project Path="Sgm.Core.Tests/Sgm.Core.Tests.csproj" />
+  <Project Path="Sgm.Core/Sgm.Core.csproj" />
+</Solution>
