@@ -15,7 +15,7 @@ own files. A SteamGridDB key is optional, not required.
 
 - **One library, A to Z.** Every enabled storefront is merged into a single alphabetical list.
 - **One-click import.** Add a game individually or use Add All for everything new.
-- **Artwork that matches.** Covers, heroes, logos and icons are pulled from launcher caches,
+- **Artwork matching.** Covers, heroes, logos and icons are pulled from launcher caches,
   keyless catalogs and the installed game itself. SteamGridDB can be added for custom art.
 - **Safe writes.** `shortcuts.vdf` is backed up before every change, and SGM refuses to write
   while Steam is running unless you explicitly force it.
@@ -23,7 +23,7 @@ own files. A SteamGridDB key is optional, not required.
   density levels keep hundreds of games manageable.
 - **Launch-aware shortcuts.** Each launcher gets the right command line, from Epic's URI protocol
   to Xbox's `shell:AppsFolder` entries and Battle.net's direct launch codes.
-- **Nothing is permanent.** Hide a game and undo it with Ctrl+Z, or match different artwork at
+- **Configurability.** Hide a game and undo it with Ctrl+Z, or match different artwork at
   any time. Window size and layout are remembered between sessions.
 
 ## Screenshots
