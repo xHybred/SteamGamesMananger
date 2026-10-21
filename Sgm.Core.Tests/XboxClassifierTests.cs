@@ -70,6 +70,66 @@ public class XboxClassifierTests
     }
 
     [Fact]
+    public void CandidatePackagesExcludeFrameworksAndResources()
+    {
+        Assert.True(XboxRules.IsCandidatePackage("PocketpairInc.Palworld", "PocketpairInc.Palworld_abc", false, false));
+        Assert.False(XboxRules.IsCandidatePackage("Microsoft.VCLibs.140.00", "Microsoft.VCLibs.140.00_abc", true, false));
+        Assert.False(XboxRules.IsCandidatePackage("Microsoft.WindowsCalculator", "Microsoft.WindowsCalculator_abc", false, true));
+        Assert.False(XboxRules.IsCandidatePackage("", "family", false, false));
+    }
+
+    [Fact]
+    public void OnlyGamingRootIdentitiesCountAsGames()
+    {
+        var identities = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "PocketpairInc.Palworld" };
+        Assert.True(XboxRules.IsRegisteredGame("PocketpairInc.Palworld", identities));
+        Assert.True(XboxRules.IsRegisteredGame("pocketpairinc.palworld", identities));
+        Assert.False(XboxRules.IsRegisteredGame("Microsoft.WindowsCalculator", identities));
+        Assert.False(XboxRules.IsRegisteredGame("", identities));
+    }
+
+    [Fact]
+    public void ManifestReadsDisplayNameAndSplashArt()
+    {
+        var dir = TempDir();
+        try
+        {
+            File.WriteAllBytes(Path.Combine(dir, "Splash.png"), new byte[4]);
+            File.WriteAllText(Path.Combine(dir, "AppxManifest.xml"),
+                "<?xml version=\"1.0\"?><Package><Properties><DisplayName>Ignored</DisplayName></Properties>" +
+                "<Applications><Application Id=\"Game\"><VisualElements DisplayName=\"Palworld\" SplashScreenImage=\"Splash.png\" />" +
+                "</Application></Applications></Package>");
+
+            var manifest = XboxScanner.ReadManifest(dir);
+            Assert.Equal("Palworld", manifest.DisplayName);
+            Assert.Equal(new[] { "Game" }, manifest.AppIds);
+            Assert.EndsWith("Splash.png", manifest.Art["heroes"]);
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ManifestSkipsMsResourceDisplayNames()
+    {
+        var dir = TempDir();
+        try
+        {
+            File.WriteAllText(Path.Combine(dir, "AppxManifest.xml"),
+                "<?xml version=\"1.0\"?><Package><Applications><Application Id=\"Game\">" +
+                "<VisualElements DisplayName=\"ms-resource://App/Resources/Name\" /></Application></Applications></Package>");
+
+            Assert.Equal("", XboxScanner.ReadManifest(dir).DisplayName);
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact]
     public void FriendlyNamesExpandKnownIds()
     {
         Assert.Equal("Minecraft: Bedrock", XboxRules.FriendlyName("Microsoft.MinecraftUWP"));

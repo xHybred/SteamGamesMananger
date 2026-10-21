@@ -58,6 +58,14 @@ public sealed partial class LibraryViewModel : ObservableObject
     [ObservableProperty] private string _steamStatusText = "Steam: \u2014";
     [ObservableProperty] private int _newCount;
     [ObservableProperty] private bool _isBusy;
+    [ObservableProperty] private bool _isInitializing;
+    [ObservableProperty] private bool _isAddingAll;
+
+    /// <summary>True while a scan or the initial library load is running.</summary>
+    public bool ShowBusy => IsBusy || IsInitializing;
+
+    /// <summary>The empty-state card should stay hidden behind the initial progress ring.</summary>
+    public bool ShowEmptyState => IsEmpty && !ShowBusy;
 
     public LibraryViewModel(MainViewModel shell)
     {
@@ -119,18 +127,42 @@ public sealed partial class LibraryViewModel : ObservableObject
         RebuildRows();
     }
 
-    /// <summary>Re-chunk the grid into rows of <see cref="GridColumns"/> items.</summary>
+    /// <summary>Re-chunk the grid into rows of <see cref="GridColumns"/> items without rebuilding untouched rows.</summary>
     private void RebuildRows()
     {
         var columns = GridColumns > 0 ? GridColumns : 4;
-        GameRows.Clear();
-        for (var i = 0; i < Games.Count; i += columns)
-            GameRows.Add(new GameRowViewModel(Games.Skip(i).Take(columns).ToList()));
+        var rowCount = (Games.Count + columns - 1) / columns;
+
+        while (GameRows.Count > rowCount)
+            GameRows.RemoveAt(GameRows.Count - 1);
+        while (GameRows.Count < rowCount)
+            GameRows.Add(new GameRowViewModel(Array.Empty<GameItemViewModel>()));
+
+        for (var r = 0; r < rowCount; r++)
+        {
+            var items = Games.Skip(r * columns).Take(columns).ToList();
+            if (!GameRows[r].Items.SequenceEqual(items))
+                GameRows[r].Items = items;
+        }
     }
 
-    partial void OnSearchTextChanged(string value) => ApplyFilter();
+    partial void OnSearchTextChanged(string value)
+    {
+        ApplyFilter();
+        ClearSearchCommand.NotifyCanExecuteChanged();
+    }
 
-    partial void OnIsBusyChanged(bool value) => AddAllNewCommand.NotifyCanExecuteChanged();
+    partial void OnIsBusyChanged(bool value) => NotifyBusyState();
+
+    partial void OnIsInitializingChanged(bool value) => NotifyBusyState();
+
+    partial void OnIsEmptyChanged(bool value) => OnPropertyChanged(nameof(ShowEmptyState));
+
+    private void NotifyBusyState()
+    {
+        OnPropertyChanged(nameof(ShowBusy));
+        OnPropertyChanged(nameof(ShowEmptyState));
+    }
 
     private void OnChipChanged(string source)
     {
@@ -353,7 +385,7 @@ public sealed partial class LibraryViewModel : ObservableObject
         var needle = SearchText.Trim().ToLowerInvariant();
         var sources = Chips.ToDictionary(c => c.Source, c => c.IsOn);
 
-        Games.Clear();
+        var visible = new List<GameItemViewModel>();
         var newCount = 0;
         foreach (var game in _all)
         {
@@ -363,10 +395,15 @@ public sealed partial class LibraryViewModel : ObservableObject
                 continue;
             if (needle.Length > 0 && !game.Name.ToLowerInvariant().Contains(needle))
                 continue;
-            Games.Add(game);
+            visible.Add(game);
             if (!game.InSteam)
                 newCount++;
         }
+
+        // Merge every enabled storefront into one alphabetical library.
+        visible.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.CurrentCultureIgnoreCase));
+
+        Synchronize(Games, visible);
 
         NewCount = newCount;
         IsEmpty = Games.Count == 0;
@@ -381,6 +418,31 @@ public sealed partial class LibraryViewModel : ObservableObject
         SteamStatusText = SteamRunning ? "Steam: Running" : "Steam: Closed";
     }
 
+    /// <summary>
+    /// Mirror <paramref name="desired"/> into <paramref name="target"/> with minimal collection
+    /// notifications, so a state refresh does not clear and rebuild every visible row.
+    /// </summary>
+    private static void Synchronize(ObservableCollection<GameItemViewModel> target, IReadOnlyList<GameItemViewModel> desired)
+    {
+        var wanted = new HashSet<GameItemViewModel>(desired);
+
+        for (var i = target.Count - 1; i >= 0; i--)
+        {
+            if (!wanted.Contains(target[i]))
+                target.RemoveAt(i);
+        }
+
+        for (var i = 0; i < desired.Count; i++)
+        {
+            var item = desired[i];
+            var current = target.IndexOf(item);
+            if (current < 0)
+                target.Insert(i, item);
+            else if (current != i)
+                target.Move(current, i);
+        }
+    }
+
     public void SetSteamRunning(bool running)
     {
         SteamRunning = running;
@@ -389,21 +451,67 @@ public sealed partial class LibraryViewModel : ObservableObject
 
     // ------------------------------------------------------------------ actions
 
-    private bool CanAddAllNew() => !IsBusy && NewCount > 0;
+    private bool CanAddAllNew() => NewCount > 0;
 
-    [RelayCommand(CanExecute = nameof(CanAddAllNew))]
+    [RelayCommand(CanExecute = nameof(CanAddAllNew), AllowConcurrentExecutions = true)]
     private async Task AddAllNewAsync()
     {
         var fresh = Games.Where(g => !g.InSteam).ToList();
         if (fresh.Count == 0)
             return;
-        await AddGamesAsync(fresh);
+        IsAddingAll = true;
+        try
+        {
+            await AddGamesAsync(fresh);
+        }
+        finally
+        {
+            IsAddingAll = false;
+        }
     }
 
+    private bool CanClearSearch() => SearchText.Length > 0;
+
+    [RelayCommand(CanExecute = nameof(CanClearSearch))]
+    private void ClearSearch() => SearchText = "";
+
+    private readonly Stack<GameKey> _hiddenUndo = new();
+
+    /// <summary>Restore the most recently hidden game (Ctrl+Z).</summary>
     [RelayCommand]
+    private void UndoHide()
+    {
+        if (_hiddenUndo.Count == 0)
+        {
+            _shell.Flash("Nothing to undo.");
+            return;
+        }
+
+        var key = _hiddenUndo.Pop();
+        _hidden.Remove(key);
+        PersistHidden();
+        _shell.Flash($"{key.Name} restored.");
+    }
+
+    private void PersistHidden()
+    {
+        _shell.Settings.Hidden = _hidden.Select(k => new[] { k.Source, k.Name, k.Exe }).ToList();
+        _shell.SaveSettings();
+        _shell.NotifyHiddenChanged(_hidden.Count);
+        ApplyFilter();
+    }
+
+    // One shared command instance backs every row's Add button. Without concurrent execution,
+    // the async command reports CanExecute=false while a write runs, so every Add button in the
+    // list renders its disabled (dark) state. AddGamesAsync already serializes with IsBusy.
+    [RelayCommand(AllowConcurrentExecutions = true)]
     private async Task AddSingleAsync(GameItemViewModel? game)
     {
-        if (game != null)
+        if (game == null)
+            return;
+        if (game.InSteam)
+            await RemoveGamesAsync(new List<GameItemViewModel> { game });
+        else
             await AddGamesAsync(new List<GameItemViewModel> { game });
     }
 
@@ -414,11 +522,17 @@ public sealed partial class LibraryViewModel : ObservableObject
 
         var steamDir = _shell.SteamDir;
         if (steamDir == null)
+        {
+            _shell.Flash("Steam was not found.", isError: true);
             return;
+        }
 
         var accounts = _shell.CheckedAccountDirs();
         if (accounts.Count == 0)
+        {
+            _shell.Flash("Select at least one Steam account.", isError: true);
             return;
+        }
 
         IsBusy = true;
         try
@@ -430,6 +544,9 @@ public sealed partial class LibraryViewModel : ObservableObject
                 _shell.Flash("Failed. Close Steam.", isError: true);
                 return;
             }
+
+            foreach (var game in games)
+                game.IsAdding = true;
 
             var gameModels = games.Select(g => g.Game).ToList();
             foreach (var dir in accounts)
@@ -469,6 +586,67 @@ public sealed partial class LibraryViewModel : ObservableObject
         }
         finally
         {
+            foreach (var game in games)
+                game.IsAdding = false;
+            IsBusy = false;
+            AddAllNewCommand.NotifyCanExecuteChanged();
+        }
+    }
+
+    private async Task RemoveGamesAsync(IReadOnlyList<GameItemViewModel> games)
+    {
+        if (IsBusy)
+            return;
+
+        var steamDir = _shell.SteamDir;
+        if (steamDir == null)
+        {
+            _shell.Flash("Steam was not found.", isError: true);
+            return;
+        }
+
+        var accounts = _shell.CheckedAccountDirs();
+        if (accounts.Count == 0)
+        {
+            _shell.Flash("Select at least one Steam account.", isError: true);
+            return;
+        }
+
+        IsBusy = true;
+        try
+        {
+            _shell.RefreshSteamRunning();
+            SetSteamRunning(_shell.SteamRunning);
+            if (_shell.SteamRunning && !_shell.Settings.Force)
+            {
+                _shell.Flash("Failed. Close Steam.", isError: true);
+                return;
+            }
+
+            foreach (var game in games)
+                game.IsAdding = true;
+
+            var gameModels = games.Select(g => g.Game).ToList();
+            foreach (var dir in accounts)
+            {
+                var (removed, backup, error) = await Task.Run(() =>
+                    SteamWriter.RemoveAccount(dir, gameModels));
+                if (error != null)
+                    AppLog.Error($"[{Path.GetFileName(dir)}] remove failed: {error}");
+            }
+
+            await RefreshStatesAsync();
+            ApplyFilter();
+            _shell.Flash("Removed. Restart Steam to see changes.");
+        }
+        catch (Exception ex)
+        {
+            AppLog.Error($"Remove failed: {ex}");
+        }
+        finally
+        {
+            foreach (var game in games)
+                game.IsAdding = false;
             IsBusy = false;
             AddAllNewCommand.NotifyCanExecuteChanged();
         }
@@ -540,10 +718,9 @@ public sealed partial class LibraryViewModel : ObservableObject
         if (game == null)
             return;
         _hidden.Add(game.Key);
-        _shell.Settings.Hidden = _hidden.Select(k => new[] { k.Source, k.Name, k.Exe }).ToList();
-        _shell.SaveSettings();
-        _shell.NotifyHiddenChanged(_hidden.Count);
-        ApplyFilter();
+        _hiddenUndo.Push(game.Key);
+        PersistHidden();
+        _shell.Flash($"{game.Name} hidden. Press Ctrl+Z to undo.");
     }
 
     [RelayCommand]

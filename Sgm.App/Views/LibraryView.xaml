@@ -27,24 +27,48 @@
                 <TextBlock Style="{StaticResource PageTitle}" Text="Non-Steam Games" />
                 <TextBlock Style="{StaticResource MutedText}" Margin="0,2,0,0"
                            Text="{Binding SummaryText}" />
+
+                <Border Margin="0,8,0,0" Padding="10,6" CornerRadius="4"
+                        Background="{DynamicResource WellBrush}"
+                        BorderBrush="{DynamicResource WarnBrush}" BorderThickness="1"
+                        Visibility="{Binding Shell.SteamMissing, Converter={StaticResource BoolToVis}}">
+                    <StackPanel Orientation="Horizontal">
+                        <ui:SymbolIcon Symbol="Warning24" FontSize="14" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource WarnBrush}" />
+                        <TextBlock Margin="8,0,0,0" VerticalAlignment="Center"
+                                   Style="{StaticResource SmallMutedText}"
+                                   Text="Steam was not found. Library scanning and shortcut writing are unavailable until Steam is installed." />
+                    </StackPanel>
+                </Border>
             </StackPanel>
 
             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                <ui:TextBox Style="{StaticResource SgmSearchBox}" Width="220" VerticalAlignment="Center"
-                            PlaceholderText="Search games..." ClearButtonEnabled="True"
+                <ui:TextBox x:Name="SearchBox" Style="{StaticResource SgmSearchBox}" Width="220" VerticalAlignment="Center"
+                            PlaceholderText="Search games... (Ctrl+F)" ClearButtonEnabled="True"
+                            AutomationProperties.Name="Search games"
                             Icon="{ui:SymbolIcon Search24}"
                             Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" />
 
                 <ui:Button Style="{StaticResource SgmSecondaryButton}" Height="30" Margin="8,0,0,0"
                            Icon="{ui:SymbolIcon ArrowSync24}" Content="Scan Library"
+                           ToolTip="Rescan every launcher (F5)"
                            Command="{Binding RescanCommand}" />
                 <ui:Button Style="{StaticResource SgmGhostButton}" Height="30" Margin="4,0,0,0"
                            Content="Cancel" Command="{Binding CancelScanCommand}"
                            Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}" />
 
                 <ui:Button Style="{StaticResource SgmPrimaryButton}" Height="30" Margin="8,0,0,0"
-                           Icon="{ui:SymbolIcon Add24}" Content="Add All"
-                           Command="{Binding AddAllNewCommand}" />
+                           Command="{Binding AddAllNewCommand}"
+                           ToolTip="Add every new game to Steam">
+                    <StackPanel Orientation="Horizontal">
+                        <ui:SymbolIcon Symbol="Add24" FontSize="14"
+                                       Visibility="{Binding IsAddingAll, Converter={StaticResource BoolToVis}, ConverterParameter=invert}" />
+                        <ui:ProgressRing Width="12" Height="12" IsIndeterminate="True" Margin="0,0,6,0"
+                                         Foreground="{DynamicResource AccentInkBrush}"
+                                         Visibility="{Binding IsAddingAll, Converter={StaticResource BoolToVis}}" />
+                        <TextBlock Text="Add All" VerticalAlignment="Center" />
+                    </StackPanel>
+                </ui:Button>
 
                 <Rectangle Width="1" Fill="{DynamicResource CardEdgeBrush}" Opacity="0.5"
                            Margin="12,4,0,4" VerticalAlignment="Stretch" />
@@ -55,17 +79,17 @@
                         <SolidColorBrush x:Key="ButtonBackgroundDisabled" Color="Transparent" />
                     </StackPanel.Resources>
                     <ui:Button Style="{StaticResource SgmGhostButton}" Padding="0" Width="28" Height="26"
-                               ToolTip="Launch Steam"
+                               ToolTip="Launch Steam" AutomationProperties.Name="Launch Steam"
                                Command="{Binding Shell.LaunchSteamCommand}">
                         <ui:SymbolIcon Symbol="Play24" FontSize="16" Foreground="{DynamicResource GoodBrush}" />
                     </ui:Button>
                     <ui:Button Style="{StaticResource SgmGhostButton}" Padding="0" Width="28" Height="26" Margin="2,0,0,0"
-                               ToolTip="Restart Steam"
+                               ToolTip="Restart Steam" AutomationProperties.Name="Restart Steam"
                                Command="{Binding Shell.RestartSteamCommand}">
                         <ui:SymbolIcon Symbol="ArrowSync24" FontSize="16" Foreground="{DynamicResource WarnBrush}" />
                     </ui:Button>
                     <ui:Button Style="{StaticResource SgmGhostButton}" Padding="0" Width="28" Height="26" Margin="2,0,0,0"
-                               ToolTip="Close Steam"
+                               ToolTip="Close Steam" AutomationProperties.Name="Close Steam"
                                Command="{Binding Shell.CloseSteamCommand}">
                         <ui:SymbolIcon Symbol="Dismiss24" FontSize="16" Foreground="{DynamicResource BadBrush}" />
                     </ui:Button>
@@ -83,7 +107,8 @@
             </Grid.ColumnDefinitions>
 
             <Border Grid.Column="0" Background="{DynamicResource WellBrush}" CornerRadius="4"
-                    Padding="10,5" VerticalAlignment="Center">
+                    Padding="10,5" VerticalAlignment="Center"
+                    ToolTip="Green means Steam is closed and shortcuts can be written safely. Red means Steam is running.">
                 <StackPanel Orientation="Horizontal">
                     <Ellipse Width="9" Height="9" VerticalAlignment="Center">
                         <Ellipse.Style>
@@ -155,7 +180,7 @@
         <Grid Grid.Row="3">
             <ui:ProgressRing Width="30" Height="30" IsIndeterminate="True"
                              HorizontalAlignment="Center" VerticalAlignment="Center"
-                             Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}" />
+                             Visibility="{Binding ShowBusy, Converter={StaticResource BoolToVis}}" />
 
             <ListBox x:Name="ListGames" Background="Transparent" BorderThickness="0"
                      ItemsSource="{Binding Games}" ItemTemplate="{StaticResource GameRowTemplate}"
@@ -204,7 +229,7 @@
             </ListBox>
 
             <Border Background="{DynamicResource WellBrush}" CornerRadius="8"
-                    Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVis}}">
+                    Visibility="{Binding ShowEmptyState, Converter={StaticResource BoolToVis}}">
                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24">
                     <ui:SymbolIcon Symbol="Library24" FontSize="40"
                                Foreground="{DynamicResource DimBrush}" />

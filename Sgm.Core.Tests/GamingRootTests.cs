@@ -110,4 +110,37 @@ public class GamingRootTests
             Directory.Delete(root, recursive: true);
         }
     }
+
+    [Fact]
+    public void InstalledIdentitiesIgnoreMissingExecutableAndArt()
+    {
+        var root = TempDir();
+        try
+        {
+            var content = Path.Combine(root, "G", "Content");
+            Directory.CreateDirectory(content);
+            File.WriteAllText(Path.Combine(content, "MicrosoftGame.config"),
+                "<Game><Identity Name=\"Pub.Game\" /></Game>");
+            Directory.CreateDirectory(Path.Combine(root, "NotAGame"));
+
+            GamingRoot.TargetProvider = () => new List<string> { root };
+            try
+            {
+                var identities = GamingRoot.InstalledIdentities();
+                Assert.Single(identities);
+                Assert.Contains("pub.game", identities, StringComparer.OrdinalIgnoreCase);
+
+                // The exe-based listing still rejects this install; only the identity registry keeps it.
+                Assert.Empty(GamingRoot.ScanGamingRoots());
+            }
+            finally
+            {
+                GamingRoot.TargetProvider = () => new List<string>();
+            }
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
 }

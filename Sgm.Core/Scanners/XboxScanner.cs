@@ -11,6 +11,8 @@ namespace Sgm.Core.Scanners;
 /// <summary>
 /// Xbox / UWP scanner: enumerates AppX packages via PowerShell, splitting
 /// Exe = explorer.exe from LaunchOptions = shell:AppsFolder\&lt;Family&gt;!&lt;AppId&gt;.
+/// Only packages registered in a drive's ".GamingRoot" are treated as games, which keeps
+/// Microsoft Store apps, frameworks, and resource packages out of the results.
 /// </summary>
 public sealed class XboxScanner : IScanner
 {
@@ -20,13 +22,9 @@ public sealed class XboxScanner : IScanner
 
     private static readonly string PowerQuery =
         "Get-AppxPackage | ForEach-Object {" +
-        " $m = $null; try { $m = Get-AppxPackageManifest -Package $_.PackageFullName } catch {};" +
-        " $ids = @(); $exts = @(); if ($m) {" +
-        " $ids = @($m.Package.Applications.Application | ForEach-Object { $_.Id });" +
-        " $exts = @($m.Package.Applications.Application.Extensions.Extension | ForEach-Object { $_.Category } | Where-Object { $_ }) };" +
         " [PSCustomObject]@{ Name=$_.Name; PackageFamilyName=$_.PackageFamilyName;" +
         " PackageFullName=$_.PackageFullName; InstallLocation=$_.InstallLocation;" +
-        " AppIds=($ids -join ','); Exts=(($exts | Select-Object -Unique) -join ','); Manifest=[bool]$m } } | ConvertTo-Json -Compress";
+        " IsFramework=$_.IsFramework; IsResourcePackage=$_.IsResourcePackage } } | ConvertTo-Json -Compress";
 
     private static List<JsonElement> QueryPackages()
     {
@@ -69,24 +67,16 @@ public sealed class XboxScanner : IScanner
         return result;
     }
 
-    public static string? ManifestAppId(string install)
-    {
-        var manifest = Path.Combine(install, "AppxManifest.xml");
-        if (!File.Exists(manifest))
-            return null;
-        try
-        {
-            var doc = XDocument.Load(manifest);
-            return doc.Descendants().FirstOrDefault(el => el.Name.LocalName == "Application")?.Attribute("Id")?.Value;
-        }
-        catch
-        {
-            return null;
-        }
-    }
+    /// <summary>Everything the scanner needs from one <c>AppxManifest.xml</c>.</summary>
+    public sealed record XboxManifest(
+        List<string> AppIds,
+        string DisplayName,
+        string Extensions,
+        Dictionary<string, string> Art);
 
-    public static Dictionary<string, string> ManifestArt(string install)
+    public static XboxManifest ReadManifest(string install)
     {
+        var empty = new XboxManifest(new List<string>(), "", "", new Dictionary<string, string>());
         XDocument doc;
         try
         {
@@ -94,32 +84,107 @@ public sealed class XboxScanner : IScanner
         }
         catch
         {
-            return new Dictionary<string, string>();
+            return empty;
         }
 
-        var visual = doc.Descendants().FirstOrDefault(el => el.Name.LocalName == "VisualElements");
-        if (visual == null)
-            return new Dictionary<string, string>();
+        var appIds = new List<string>();
+        var extensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var art = new Dictionary<string, string>();
+        var display = "";
 
-        foreach (var key in new[] { "Square310x310Logo", "Square150x150Logo" })
+        foreach (var app in doc.Descendants().Where(el => el.Name.LocalName == "Application"))
         {
-            var rel = visual.Attribute(key)?.Value.Trim() ?? "";
-            if (rel.Length == 0)
-                continue;
-            var exact = Path.Combine(install, rel);
-            if (File.Exists(exact))
-                return new Dictionary<string, string> { ["squares"] = exact };
+            var id = app.Attribute("Id")?.Value.Trim() ?? "";
+            if (id.Length > 0 && !appIds.Contains(id))
+                appIds.Add(id);
 
-            var dir = Path.GetDirectoryName(exact)!;
-            var stem = Path.GetFileNameWithoutExtension(exact);
-            var ext = Path.GetExtension(exact);
-            var scaled = Directory.EnumerateFiles(dir, $"{stem}.scale-*{ext}").OrderBy(f => f, StringComparer.Ordinal).ToList();
-            if (scaled.Count > 0)
-                return new Dictionary<string, string> { ["squares"] = scaled[^1] };
+            var visual = app.Descendants().FirstOrDefault(el => el.Name.LocalName == "VisualElements");
+            if (visual != null)
+            {
+                if (display.Length == 0)
+                    display = CleanDisplayName(visual.Attribute("DisplayName")?.Value);
+                if (art.Count == 0)
+                    art = ManifestVisualArt(install, visual);
+            }
+
+            foreach (var extension in app.Descendants().Where(el => el.Name.LocalName == "Extension"))
+            {
+                var category = extension.Attribute("Category")?.Value.Trim() ?? "";
+                if (category.Length > 0)
+                    extensions.Add(category);
+            }
         }
 
-        return new Dictionary<string, string>();
+        if (display.Length == 0)
+        {
+            var properties = doc.Descendants().FirstOrDefault(el => el.Name.LocalName == "Properties");
+            display = CleanDisplayName(properties?.Attribute("DisplayName")?.Value);
+        }
+
+        return new XboxManifest(appIds, display, string.Join(",", extensions), art);
     }
+
+    private static string CleanDisplayName(string? value)
+    {
+        var trimmed = value?.Trim() ?? "";
+        return trimmed.StartsWith("ms-resource:", StringComparison.OrdinalIgnoreCase) ? "" : trimmed;
+    }
+
+    private static Dictionary<string, string> ManifestVisualArt(string install, XElement visual)
+    {
+        var art = new Dictionary<string, string>();
+
+        var square = "";
+        foreach (var key in new[] { "Square480x480Logo", "Square310x310Logo", "Square150x150Logo", "StoreLogo" })
+        {
+            square = ResolveAsset(install, visual.Attribute(key)?.Value);
+            if (square.Length > 0)
+                break;
+        }
+        if (square.Length > 0)
+            art["squares"] = square;
+
+        var splash = ResolveAsset(install, visual.Attribute("SplashScreenImage")?.Value);
+        if (splash.Length > 0)
+        {
+            art["grids"] = splash;
+            art["heroes"] = splash;
+        }
+
+        return art;
+    }
+
+    /// <summary>Resolve a manifest asset path, preferring the exact file then the highest scale variant.</summary>
+    private static string ResolveAsset(string install, string? relative)
+    {
+        var rel = relative?.Trim() ?? "";
+        if (rel.Length == 0)
+            return "";
+        var exact = Path.Combine(install, rel);
+        if (File.Exists(exact))
+            return exact;
+
+        var dir = Path.GetDirectoryName(exact);
+        if (dir == null || !Directory.Exists(dir))
+            return "";
+        var stem = Path.GetFileNameWithoutExtension(exact);
+        var ext = Path.GetExtension(exact);
+        try
+        {
+            var scaled = Directory.EnumerateFiles(dir, $"{stem}.scale-*{ext}").OrderBy(f => f, StringComparer.Ordinal).ToList();
+            return scaled.Count > 0 ? scaled[^1] : "";
+        }
+        catch
+        {
+            return "";
+        }
+    }
+
+    public static string? ManifestAppId(string install)
+        => ReadManifest(install).AppIds.FirstOrDefault();
+
+    public static Dictionary<string, string> ManifestArt(string install)
+        => ReadManifest(install).Art;
 
     public IReadOnlyList<GameInfo> Scan()
     {
@@ -130,6 +195,10 @@ public sealed class XboxScanner : IScanner
 
         var result = new List<GameInfo>();
         var packageNames = new HashSet<string>();
+        var identities = GamingRoot.InstalledIdentities();
+        if (identities.Count == 0)
+            return result;
+
         var rootArt = GamingRoot.GamingRootArt();
 
         foreach (var pkg in QueryPackages())
@@ -140,27 +209,34 @@ public sealed class XboxScanner : IScanner
                 var name = GetString(pkg, "Name").Trim();
                 var install = GetString(pkg, "InstallLocation").Trim();
                 var full = GetString(pkg, "PackageFullName").Trim();
-                var hasManifest = pkg.TryGetProperty("Manifest", out var m) && m.ValueKind == JsonValueKind.True;
+                var isFramework = GetBool(pkg, "IsFramework");
+                var isResourcePackage = GetBool(pkg, "IsResourcePackage");
 
-                if (family.Length == 0 || XboxRules.ShouldSkip(family, name)
-                    || XboxRules.IsUtility(name, GetString(pkg, "Exts"), hasManifest))
+                if (!XboxRules.IsCandidatePackage(name, family, isFramework, isResourcePackage))
+                    continue;
+                if (!XboxRules.IsRegisteredGame(name, identities) || !Directory.Exists(install))
+                    continue;
+                if (XboxRules.ShouldSkip(family, name))
                     continue;
 
-                var appIds = GetString(pkg, "AppIds").Split(',').Select(a => a.Trim()).Where(a => a.Length > 0).ToList();
-                if (appIds.Count == 0)
-                    appIds.Add(ManifestAppId(install) ?? "App");
+                var manifest = ReadManifest(install);
+                if (manifest.AppIds.Count == 0)
+                    continue;
+                if (XboxRules.IsUtility(name, manifest.Extensions, hasManifest: true))
+                    continue;
 
                 Dictionary<string, string> art;
                 if (rootArt.TryGetValue(name.ToLowerInvariant(), out var localArt))
                     art = new Dictionary<string, string>(localArt);
                 else
-                    art = ManifestArt(install);
+                    art = manifest.Art;
 
-                foreach (var appId in appIds)
+                var display = manifest.DisplayName.Length > 0 ? manifest.DisplayName : XboxRules.FriendlyName(name);
+                foreach (var appId in manifest.AppIds)
                 {
-                    var label = XboxRules.FriendlyName(name);
-                    if (appIds.Count > 1)
-                        label = $"{label} ({appId})";
+                    var label = display;
+                    if (manifest.AppIds.Count > 1)
+                        label = $"{display} ({appId})";
 
                     var g = new GameInfo
                     {
@@ -196,4 +272,7 @@ public sealed class XboxScanner : IScanner
 
     private static string GetString(JsonElement obj, string key)
         => obj.TryGetProperty(key, out var el) && el.ValueKind == JsonValueKind.String ? el.GetString() ?? "" : "";
+
+    private static bool GetBool(JsonElement obj, string key)
+        => obj.TryGetProperty(key, out var el) && el.ValueKind == JsonValueKind.True;
 }

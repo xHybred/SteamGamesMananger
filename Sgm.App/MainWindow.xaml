@@ -16,6 +16,12 @@
         ExtendsContentIntoTitleBar="True"
         FontFamily="Segoe UI" UseLayoutRounding="True" TextOptions.TextFormattingMode="Display">
 
+    <ui:FluentWindow.InputBindings>
+        <KeyBinding Key="F5" Command="{Binding Library.RescanCommand}" />
+        <KeyBinding Key="Escape" Command="{Binding Library.ClearSearchCommand}" />
+        <KeyBinding Key="Z" Modifiers="Control" Command="{Binding Library.UndoHideCommand}" />
+    </ui:FluentWindow.InputBindings>
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -25,12 +31,16 @@
         <!-- ============ Title bar ============ -->
         <ui:TitleBar Grid.Row="0" Title="Steam Games Manager"
                      Background="{DynamicResource SidebarBrush}"
-                     Icon="{ui:SymbolIcon Games24}"
+                     Padding="16,4,6,4"
                      ShowMinimize="True" ShowMaximize="True" ShowClose="True"
                      CanMaximize="True">
+            <ui:TitleBar.Icon>
+                <ui:ImageIcon Source="pack://application:,,,/Resources/sgm-logo.png" />
+            </ui:TitleBar.Icon>
             <ui:TitleBar.TrailingContent>
                 <ui:Button Style="{StaticResource SgmGhostButton}" Padding="6,4" Margin="0,0,8,0"
                            Command="{Binding ToggleThemeCommand}"
+                           AutomationProperties.Name="Toggle theme"
                            ToolTip="Switch between Steam and Dark Gray themes">
                     <ui:SymbolIcon Symbol="DarkTheme24" FontSize="14" />
                 </ui:Button>
@@ -79,6 +89,17 @@
                 </ui:NavigationView.MenuItems>
             </ui:NavigationView>
         </Border>
+
+        <!-- Branding: bottom-left Linktree link for the developer. -->
+        <ui:Button x:Name="BrandButton" Grid.Row="1"
+                   Style="{StaticResource SgmGhostButton}"
+                   HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                   Margin="10,0,0,10" Padding="4"
+                   ToolTip="Hybred on Linktree"
+                   AutomationProperties.Name="Hybred on Linktree"
+                   Click="OnBrandClick">
+            <ui:SymbolIcon Symbol="Link24" FontSize="16" Foreground="{DynamicResource MutedBrush}" />
+        </ui:Button>
 
         <ui:ContentDialogHost x:Name="RootDialogHost" Grid.RowSpan="2" />
         <ui:SnackbarPresenter x:Name="SnackbarPresenter" Grid.RowSpan="2"

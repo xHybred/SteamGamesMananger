@@ -76,6 +76,35 @@ public class SettingsStoreTests
     }
 
     [Fact]
+    public void WindowBoundsRoundTrip()
+    {
+        var path = TempFile();
+        try
+        {
+            var store = new SettingsStore(path);
+            store.Save(new AppSettings
+            {
+                WindowWidth = 1280,
+                WindowHeight = 800,
+                WindowLeft = 120.5,
+                WindowTop = 40,
+                WindowMaximized = true,
+            });
+
+            var back = store.Load();
+            Assert.Equal(1280, back.WindowWidth);
+            Assert.Equal(800, back.WindowHeight);
+            Assert.Equal(120.5, back.WindowLeft!.Value);
+            Assert.Equal(40, back.WindowTop!.Value);
+            Assert.True(back.WindowMaximized);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
     public void MissingAndCorruptFilesReturnDefaults()
     {
         var missing = TempFile();

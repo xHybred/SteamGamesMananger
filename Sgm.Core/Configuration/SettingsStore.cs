@@ -101,6 +101,12 @@ public sealed class SettingsStore
         state.ApiKey = ReadString(obj, "api_key", state.ApiKey);
         state.Theme = ReadString(obj, "theme", state.Theme);
 
+        if (obj["window_width"] is JsonValue ww && ww.TryGetValue(out double windowWidth)) state.WindowWidth = windowWidth;
+        if (obj["window_height"] is JsonValue wh && wh.TryGetValue(out double windowHeight)) state.WindowHeight = windowHeight;
+        if (obj["window_left"] is JsonValue wl && wl.TryGetValue(out double windowLeft)) state.WindowLeft = windowLeft;
+        if (obj["window_top"] is JsonValue wt && wt.TryGetValue(out double windowTop)) state.WindowTop = windowTop;
+        if (obj["window_maximized"] is JsonValue wm && wm.TryGetValue(out bool windowMaximized)) state.WindowMaximized = windowMaximized;
+
         if (obj["artwork"] is JsonValue av && av.TryGetValue(out bool artwork)) state.Artwork = artwork;
         if (obj["overwrite"] is JsonValue ov && ov.TryGetValue(out bool overwrite)) state.Overwrite = overwrite;
         if (obj["force"] is JsonValue fv && fv.TryGetValue(out bool force)) state.Force = force;
@@ -154,6 +160,11 @@ public sealed class SettingsStore
             merged["force"] = state.Force;
             merged["api_key"] = state.ApiKey;
             merged["theme"] = state.Theme;
+            merged["window_width"] = JsonValue.Create(state.WindowWidth);
+            merged["window_height"] = JsonValue.Create(state.WindowHeight);
+            merged["window_left"] = state.WindowLeft is double left ? JsonValue.Create(left) : null;
+            merged["window_top"] = state.WindowTop is double top ? JsonValue.Create(top) : null;
+            merged["window_maximized"] = JsonValue.Create(state.WindowMaximized);
             merged["hidden"] = new JsonArray(state.Hidden
                 .Select(h => (JsonNode)new JsonArray(h.Select(x => (JsonNode)JsonValue.Create(x)!).ToArray()))
                 .ToArray());

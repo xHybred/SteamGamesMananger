@@ -24,7 +24,8 @@
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
                                    Foreground="{DynamicResource MutedBrush}"
                                    Visibility="{Binding CoverImage, Converter={StaticResource NullToVis}, ConverterParameter=invert}" />
-                        <Image Source="{Binding CoverImage}" Stretch="UniformToFill"
+                        <Image Source="{Binding CoverImage, NotifyOnTargetUpdated=True}" Stretch="UniformToFill"
+                               Style="{StaticResource FadeInImage}"
                                RenderOptions.BitmapScalingMode="HighQuality"
                                Visibility="{Binding CoverImage, Converter={StaticResource NullToVis}}" />
                     </Grid>
@@ -45,32 +46,41 @@
 
                 <StackPanel Grid.Column="5" Orientation="Horizontal" VerticalAlignment="Center"
                             Margin="0,0,10,0">
-                    <ui:Button Style="{StaticResource SgmIconButton}" Padding="0"
+                    <ui:Button x:Name="AddButton" Style="{StaticResource SgmIconButton}" Padding="0"
                             Width="{Binding DataContext.RowButtonHeight, RelativeSource={RelativeSource AncestorType=ListBox}}"
                             Height="{Binding DataContext.RowButtonHeight, RelativeSource={RelativeSource AncestorType=ListBox}}"
                             ToolTip="Add to Steam"
+                            AutomationProperties.Name="{Binding ToolTip, RelativeSource={RelativeSource Self}}"
                             Command="{Binding DataContext.AddSingleCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
                             CommandParameter="{Binding}">
-                        <ui:SymbolIcon x:Name="AddGlyph" Symbol="Add24"
-                                   Foreground="{DynamicResource AccentInkBrush}" />
+                        <Grid>
+                            <ui:SymbolIcon x:Name="AddGlyph" Symbol="Add24"
+                                       Foreground="{DynamicResource AccentInkBrush}"
+                                       Visibility="{Binding IsAdding, Converter={StaticResource BoolToVis}, ConverterParameter=invert}" />
+                            <ui:ProgressRing Width="12" Height="12" IsIndeterminate="True"
+                                       Foreground="{DynamicResource AccentInkBrush}"
+                                       Visibility="{Binding IsAdding, Converter={StaticResource BoolToVis}}" />
+                        </Grid>
                     </ui:Button>
-                    <ui:Button Style="{StaticResource SgmIconButton}" Padding="0" Margin="6,0,0,0"
+                    <ui:Button Style="{StaticResource SgmSubtleIconButton}" Padding="0" Margin="6,0,0,0"
                             Width="{Binding DataContext.RowButtonHeight, RelativeSource={RelativeSource AncestorType=ListBox}}"
                             Height="{Binding DataContext.RowButtonHeight, RelativeSource={RelativeSource AncestorType=ListBox}}"
                             ToolTip="Match artwork"
+                            AutomationProperties.Name="Match artwork"
                             Command="{Binding DataContext.MatchArtworkCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
                             CommandParameter="{Binding}">
                         <ui:SymbolIcon Symbol="Image24"
-                                   Foreground="{DynamicResource AccentInkBrush}" />
+                                   Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ui:Button}}" />
                     </ui:Button>
-                    <ui:Button Style="{StaticResource SgmIconButton}" Padding="0" Margin="6,0,0,0"
+                    <ui:Button Style="{StaticResource SgmDangerIconButton}" Padding="0" Margin="6,0,0,0"
                             Width="{Binding DataContext.RowButtonHeight, RelativeSource={RelativeSource AncestorType=ListBox}}"
                             Height="{Binding DataContext.RowButtonHeight, RelativeSource={RelativeSource AncestorType=ListBox}}"
                             ToolTip="Hide game"
+                            AutomationProperties.Name="Hide game"
                             Command="{Binding DataContext.HideCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
                             CommandParameter="{Binding}">
                         <ui:SymbolIcon Symbol="Dismiss24" FontSize="12"
-                                   Foreground="{DynamicResource AccentInkBrush}" />
+                                   Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ui:Button}}" />
                     </ui:Button>
                 </StackPanel>
             </Grid>
@@ -80,6 +90,8 @@
                 <Setter TargetName="Edge" Property="Background" Value="{DynamicResource PanelHoverBrush}" />
                 <Setter TargetName="AddGlyph" Property="Symbol" Value="Checkmark24" />
                 <Setter TargetName="AddGlyph" Property="Foreground" Value="{DynamicResource AccentInkBrush}" />
+                <Setter TargetName="AddButton" Property="Opacity" Value="0.45" />
+                <Setter TargetName="AddButton" Property="ToolTip" Value="Remove from Steam" />
             </DataTrigger>
         </DataTemplate.Triggers>
     </DataTemplate>
@@ -102,7 +114,8 @@
                                        HorizontalAlignment="Center" VerticalAlignment="Center"
                                        Foreground="{DynamicResource MutedBrush}"
                                        Visibility="{Binding CoverImage, Converter={StaticResource NullToVis}, ConverterParameter=invert}" />
-                            <Image Source="{Binding CoverImage}" Stretch="UniformToFill"
+                            <Image Source="{Binding CoverImage, NotifyOnTargetUpdated=True}" Stretch="UniformToFill"
+                                   Style="{StaticResource FadeInImage}"
                                    RenderOptions.BitmapScalingMode="HighQuality"
                                    Visibility="{Binding CoverImage, Converter={StaticResource NullToVis}}" />
                             <Border VerticalAlignment="Bottom" Height="88"
@@ -135,21 +148,30 @@
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,8,0,0">
                     <ui:Button x:Name="TileAddButton" Style="{StaticResource SgmIconButton}" Width="{Binding DataContext.TileButtonSize, RelativeSource={RelativeSource AncestorType=ListBox}}" Height="{Binding DataContext.TileButtonSize, RelativeSource={RelativeSource AncestorType=ListBox}}" Padding="0"
                             ToolTip="Add to Steam"
+                            AutomationProperties.Name="{Binding ToolTip, RelativeSource={RelativeSource Self}}"
                             Command="{Binding DataContext.AddSingleCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
                             CommandParameter="{Binding}">
-                        <ui:SymbolIcon x:Name="TileAddGlyph" Symbol="Add24" FontSize="{Binding DataContext.TileIconFontSize, RelativeSource={RelativeSource AncestorType=ListBox}}" Foreground="{DynamicResource AccentInkBrush}" />
+                        <Grid>
+                            <ui:SymbolIcon x:Name="TileAddGlyph" Symbol="Add24" FontSize="{Binding DataContext.TileIconFontSize, RelativeSource={RelativeSource AncestorType=ListBox}}" Foreground="{DynamicResource AccentInkBrush}"
+                                       Visibility="{Binding IsAdding, Converter={StaticResource BoolToVis}, ConverterParameter=invert}" />
+                            <ui:ProgressRing Width="14" Height="14" IsIndeterminate="True"
+                                       Foreground="{DynamicResource AccentInkBrush}"
+                                       Visibility="{Binding IsAdding, Converter={StaticResource BoolToVis}}" />
+                        </Grid>
                     </ui:Button>
-                    <ui:Button Style="{StaticResource SgmIconButton}" Width="{Binding DataContext.TileButtonSize, RelativeSource={RelativeSource AncestorType=ListBox}}" Height="{Binding DataContext.TileButtonSize, RelativeSource={RelativeSource AncestorType=ListBox}}" Margin="10,0,0,0" Padding="0"
+                    <ui:Button Style="{StaticResource SgmSubtleIconButton}" Width="{Binding DataContext.TileButtonSize, RelativeSource={RelativeSource AncestorType=ListBox}}" Height="{Binding DataContext.TileButtonSize, RelativeSource={RelativeSource AncestorType=ListBox}}" Margin="10,0,0,0" Padding="0"
                             ToolTip="Match artwork"
+                            AutomationProperties.Name="Match artwork"
                             Command="{Binding DataContext.MatchArtworkCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
                             CommandParameter="{Binding}">
-                        <ui:SymbolIcon Symbol="Image24" FontSize="{Binding DataContext.TileIconFontSize, RelativeSource={RelativeSource AncestorType=ListBox}}" Foreground="{DynamicResource AccentInkBrush}" />
+                        <ui:SymbolIcon Symbol="Image24" FontSize="{Binding DataContext.TileIconFontSize, RelativeSource={RelativeSource AncestorType=ListBox}}" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ui:Button}}" />
                     </ui:Button>
-                    <ui:Button Style="{StaticResource SgmIconButton}" Width="{Binding DataContext.TileButtonSize, RelativeSource={RelativeSource AncestorType=ListBox}}" Height="{Binding DataContext.TileButtonSize, RelativeSource={RelativeSource AncestorType=ListBox}}" Margin="10,0,0,0" Padding="0"
+                    <ui:Button Style="{StaticResource SgmDangerIconButton}" Width="{Binding DataContext.TileButtonSize, RelativeSource={RelativeSource AncestorType=ListBox}}" Height="{Binding DataContext.TileButtonSize, RelativeSource={RelativeSource AncestorType=ListBox}}" Margin="10,0,0,0" Padding="0"
                             ToolTip="Hide game"
+                            AutomationProperties.Name="Hide game"
                             Command="{Binding DataContext.HideCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
                             CommandParameter="{Binding}">
-                        <ui:SymbolIcon Symbol="Dismiss24" FontSize="{Binding DataContext.TileIconFontSize, RelativeSource={RelativeSource AncestorType=ListBox}}" />
+                        <ui:SymbolIcon Symbol="Dismiss24" FontSize="{Binding DataContext.TileIconFontSize, RelativeSource={RelativeSource AncestorType=ListBox}}" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ui:Button}}" />
                     </ui:Button>
                 </StackPanel>
             </StackPanel>
@@ -158,6 +180,8 @@
             <DataTrigger Binding="{Binding InSteam}" Value="True">
                 <Setter TargetName="TileAddGlyph" Property="Symbol" Value="Checkmark24" />
                 <Setter TargetName="TileAddGlyph" Property="Foreground" Value="{DynamicResource AccentInkBrush}" />
+                <Setter TargetName="TileAddButton" Property="Opacity" Value="0.45" />
+                <Setter TargetName="TileAddButton" Property="ToolTip" Value="Remove from Steam" />
             </DataTrigger>
         </DataTemplate.Triggers>
     </DataTemplate>

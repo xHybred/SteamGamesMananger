@@ -31,6 +31,29 @@
         <Setter Property="FontSize" Value="11" />
     </Style>
 
+    <!-- Keyboard-only focus cues (FocusVisualStyle is ignored for mouse focus). -->
+    <Style x:Key="SgmFocusVisual">
+        <Setter Property="Control.Template">
+            <Setter.Value>
+                <ControlTemplate>
+                    <Border Margin="-2" CornerRadius="4" BorderThickness="1"
+                            BorderBrush="{DynamicResource AccentBrush}" SnapsToDevicePixels="True" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="SgmRoundFocusVisual">
+        <Setter Property="Control.Template">
+            <Setter.Value>
+                <ControlTemplate>
+                    <Border Margin="-3" CornerRadius="999" BorderThickness="1"
+                            BorderBrush="{DynamicResource AccentBrush}" SnapsToDevicePixels="True" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- ===================== WPF-UI controls (themed to this app) ===================== -->
     <!-- Standard action buttons use WPF-UI's Button so hover/press/focus states are consistent.
          Specialised tile / power / chrome / chip buttons keep the app's own templates. -->
@@ -66,6 +89,7 @@
         <Setter Property="Padding" Value="10,6" />
         <Setter Property="CornerRadius" Value="4" />
         <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FocusVisualStyle" Value="{StaticResource SgmFocusVisual}" />
         <Style.Triggers>
             <Trigger Property="IsMouseOver" Value="True">
                 <Setter Property="Background" Value="{DynamicResource PanelHoverBrush}" />
@@ -90,6 +114,40 @@
         <Setter Property="Padding" Value="0" />
         <Setter Property="CornerRadius" Value="999" />
         <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FocusVisualStyle" Value="{StaticResource SgmRoundFocusVisual}" />
+    </Style>
+
+    <!-- Secondary row actions: quiet by default so the accent Add button keeps focus. -->
+    <Style x:Key="SgmSubtleIconButton" TargetType="{x:Type ui:Button}"
+           BasedOn="{StaticResource SgmGhostButton}">
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="CornerRadius" Value="999" />
+        <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+        <Setter Property="FocusVisualStyle" Value="{StaticResource SgmRoundFocusVisual}" />
+    </Style>
+
+    <Style x:Key="SgmDangerIconButton" TargetType="{x:Type ui:Button}"
+           BasedOn="{StaticResource SgmSubtleIconButton}">
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource BadBrush}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- Covers fade in when a thumbnail finishes resolving. -->
+    <Style x:Key="FadeInImage" TargetType="Image">
+        <Setter Property="Opacity" Value="1" />
+        <Style.Triggers>
+            <EventTrigger RoutedEvent="Binding.TargetUpdated">
+                <BeginStoryboard>
+                    <Storyboard>
+                        <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                         From="0" To="1" Duration="0:0:0.18" />
+                    </Storyboard>
+                </BeginStoryboard>
+            </EventTrigger>
+        </Style.Triggers>
     </Style>
 
     <!-- Container card, themed to the app's Card surface (borderless, 14px padding). -->
@@ -103,7 +161,9 @@
     <!-- Search / API key inputs -->
     <Style x:Key="SgmSearchBox" TargetType="{x:Type ui:TextBox}"
            BasedOn="{StaticResource {x:Type ui:TextBox}}">
-        <Setter Property="Height" Value="30" />
+        <Setter Property="Height" Value="32" />
+        <Setter Property="Padding" Value="10,0" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="FontSize" Value="12" />
     </Style>
 
@@ -136,7 +196,7 @@
         <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
         <Setter Property="FontSize" Value="11" />
         <Setter Property="Cursor" Value="Hand" />
-        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="FocusVisualStyle" Value="{StaticResource SgmFocusVisual}" />
         <Style.Triggers>
             <Trigger Property="IsChecked" Value="True">
                 <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
@@ -187,7 +247,7 @@
         <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
         <Setter Property="FontSize" Value="11" />
         <Setter Property="Cursor" Value="Hand" />
-        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="FocusVisualStyle" Value="{StaticResource SgmFocusVisual}" />
         <Style.Triggers>
             <Trigger Property="IsChecked" Value="True">
                 <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
@@ -245,7 +305,7 @@
         <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
         <Setter Property="FontSize" Value="12" />
         <Setter Property="Cursor" Value="Hand" />
-        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="FocusVisualStyle" Value="{StaticResource SgmFocusVisual}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="CheckBox">

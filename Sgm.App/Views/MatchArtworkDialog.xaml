@@ -2,13 +2,19 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        xmlns:local="clr-namespace:Sgm.App.Views"
         Title="Match Artwork"
         PrimaryButtonText="Use Selected"
-        SecondaryButtonText="Cancel"
-        CloseButtonText=""
+        CloseButtonText="Close"
         DefaultButton="Primary"
         DialogMaxWidth="520"
         DialogWidth="500">
+
+    <!-- Implicit styles match the exact type only, so opt into the ContentDialog chrome explicitly. -->
+    <ui:ContentDialog.Style>
+        <Style TargetType="{x:Type local:MatchArtworkDialog}"
+               BasedOn="{StaticResource {x:Type ui:ContentDialog}}" />
+    </ui:ContentDialog.Style>
 
     <Grid Margin="0">
         <Grid.RowDefinitions>

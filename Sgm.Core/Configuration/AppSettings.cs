@@ -15,6 +15,11 @@ public sealed class AppSettings
     public string ApiKey { get; set; } = "";
     public List<string[]> Hidden { get; set; } = new();
     public string Theme { get; set; } = "steam";
+    public double WindowWidth { get; set; } = 1120;
+    public double WindowHeight { get; set; } = 760;
+    public double? WindowLeft { get; set; }
+    public double? WindowTop { get; set; }
+    public bool WindowMaximized { get; set; }
 
     public static Dictionary<string, bool> DefaultSources() => new()
     {

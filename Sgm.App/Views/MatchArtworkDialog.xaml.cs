@@ -18,6 +18,7 @@ public partial class MatchArtworkDialog : ContentDialog
         InitializeComponent();
 
         Title = $"Match Artwork \u2014 {gameName}";
+        IsPrimaryButtonEnabled = candidates.Count > 0;
 
         AutoInfo.Text = autoInfo;
         AutoInfo.Visibility = string.IsNullOrWhiteSpace(autoInfo) ? Visibility.Collapsed : Visibility.Visible;

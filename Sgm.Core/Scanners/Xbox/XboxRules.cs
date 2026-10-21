@@ -31,6 +31,7 @@ public static partial class XboxRules
         "Microsoft.Services.Store",
         "Microsoft.WinAppRuntime",
         "Microsoft.AV1VideoExtension",
+        "Microsoft.LanguageExperiencePack",
         "Microsoft.AVCEncoderVideoExtension",
         "Microsoft.HEVCVideoExtension",
         "Microsoft.MPEG2VideoExtension",
@@ -88,6 +89,7 @@ public static partial class XboxRules
         "accountscontrol", "lockapp", "credential", "bioenrollment", "appcompat",
         "winappruntime", "appinstaller", "winget", "devkit", "narratorquickstart",
         "applicationcompatibility",
+        "languageexperiencepack",
         "asynctextservice", "chxapp", "cloudexperience", "contentdelivery",
         "startmenu", "shellexperience", "windows.", "microsoftwindows.",
     };
@@ -106,6 +108,18 @@ public static partial class XboxRules
             return true;
         return SystemPrefixes.Any(p => family.StartsWith(p, StringComparison.Ordinal));
     }
+
+    /// <summary>Frameworks, resource packages, and nameless entries are never playable titles.</summary>
+    public static bool IsCandidatePackage(string name, string family, bool isFramework, bool isResourcePackage)
+        => !isFramework && !isResourcePackage
+           && !string.IsNullOrWhiteSpace(name) && !string.IsNullOrWhiteSpace(family);
+
+    /// <summary>
+    /// A package is a game only when its identity is registered by a .GamingRoot install;
+    /// this is the filter that excludes ordinary Microsoft Store apps.
+    /// </summary>
+    public static bool IsRegisteredGame(string name, IReadOnlySet<string> gamingRootIdentities)
+        => name.Length > 0 && gamingRootIdentities.Contains(name);
 
     public static HashSet<string> ExtensionKinds(string raw)
     {

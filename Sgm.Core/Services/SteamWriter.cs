@@ -48,6 +48,29 @@ public static class SteamWriter
         }
     }
 
+    /// <summary>Remove the given games' shortcuts from an account. Returns (removed, backup, error).</summary>
+    public static (int Removed, string? Backup, string? Error) RemoveAccount(string userDir, IReadOnlyList<GameInfo> games)
+    {
+        var path = SteamPaths.ShortcutsPath(userDir);
+        try
+        {
+            var data = ShortcutStore.Load(path);
+            var removed = ShortcutStore.RemoveGames(data, games);
+            if (removed == 0)
+                return (0, null, null);
+            var backup = ShortcutStore.Write(path, data);
+            return (removed, backup, null);
+        }
+        catch (InvalidDataException ex)
+        {
+            return (0, null, ex.Message);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return (0, null, ex.Message);
+        }
+    }
+
     /// <summary>Prune system/junk entries from an account. Returns (removed, backup, error).</summary>
     public static (int Removed, string? Backup, string? Error) PruneAccount(string userDir)
     {

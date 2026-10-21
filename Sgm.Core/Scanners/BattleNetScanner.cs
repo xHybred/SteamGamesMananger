@@ -17,47 +17,92 @@ public static class BattleNetScanner
     private const string UninstallKey = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Battle.net";
     private const string HostedCover = "https://dlss-swapper-downloads.beeradmoore.com/images/covers/battlenet/{0}.webp";
 
-    public static readonly Dictionary<string, (string LauncherId, string Title)> KnownGames = new()
+    /// <summary>
+    /// One Battle.net product. <see cref="LauncherId"/> is the code accepted by
+    /// <c>Battle.net.exe --exec="launch &lt;code&gt;"</c> and is empty when no code is
+    /// documented; <see cref="ProductCode"/> feeds <c>battlenet://game/&lt;code&gt;</c>.
+    /// </summary>
+    public sealed record KnownGame(string Title, string ProductCode, string LauncherId);
+
+    /// <summary>
+    /// Installed Battle.net products keyed by product UID. Launch codes come from
+    /// ShizCalev/Battlenet-Launcher, jayclassless/SteamBattleNetLauncher, dafzor/bnetlauncher
+    /// (<c>gamesdb.ini</c>), Lutris' Battle.net definitions, and DLSS Swapper's Battle.net table.
+    /// Products whose sources disagree (World of Warcraft Classic) fall back to the game page.
+    /// </summary>
+    public static readonly Dictionary<string, KnownGame> KnownGames = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["rtro"] = ("rtro", "Blizzard Arcade Collection"),
-        ["auks"] = ("auks", "Call of Duty"),
-        ["wlby"] = ("wlby", "Crash Bandicoot 4: It's About Time"),
-        ["w1r"] = ("w1r", "Warcraft I: Remastered"),
-        ["diablo3"] = ("d3", "Diablo III"),
-        ["aris"] = ("aris", "Doom: The Dark Ages"),
-        ["heroes"] = ("hero", "Heroes of the Storm"),
-        ["d3cn"] = ("d3cn", "暗黑破壞神III"),
-        ["aqua"] = ("aqua", "Avowed"),
-        ["s2"] = ("s2", "StarCraft II"),
-        ["w2"] = ("w2bn", "Warcraft II: Battle.net Edition"),
-        ["fenris"] = ("fenris", "Diablo IV"),
-        ["d1"] = ("drtl", "Diablo"),
-        ["scor"] = ("scor", "Sea of Thieves"),
-        ["w3"] = ("w3", "Warcraft III: Reforged"),
-        ["fore"] = ("fore", "Call of Duty: Vanguard"),
-        ["s1"] = ("s1", "StarCraft"),
-        ["osi"] = ("osi", "Diablo II: Resurrected"),
-        ["lazarus"] = ("lazr", "Call of Duty: MW2 Campaign Remastered"),
-        ["odin"] = ("odin", "Call of Duty: Modern Warfare"),
-        ["pinta"] = ("pinta", "Call of Duty: Modern Warfare III"),
-        ["prometheus"] = ("pro", "Overwatch"),
-        ["viper"] = ("viper", "Call of Duty: Black Ops 4"),
-        ["zeus"] = ("zeus", "Call of Duty: Black Ops Cold War"),
-        ["w1"] = ("war1", "Warcraft: Orcs & Humans"),
-        ["w2r"] = ("w2r", "Warcraft II Remastered"),
-        ["hs_beta"] = ("hsb", "Hearthstone"),
-        ["lbra"] = ("lbra", "Tony Hawk's Pro Skater 3+4"),
-        ["ark"] = ("ark", "The Outer Worlds 2"),
-        ["nina"] = ("nina", "Call of Duty: Modern Warfare II"),
+        ["rtro"] = new("Blizzard Arcade Collection", "rtro", "rtro"),
+        ["auks"] = new("Call of Duty", "auks", "AUKS"),
+        ["wlby"] = new("Crash Bandicoot 4: It's About Time", "wlby", "WLBY"),
+        ["w1r"] = new("Warcraft I: Remastered", "w1r", "W1R"),
+        ["diablo3"] = new("Diablo III", "d3", "D3"),
+        ["aris"] = new("Doom: The Dark Ages", "aris", "ARIS"),
+        ["heroes"] = new("Heroes of the Storm", "hero", "Hero"),
+        ["d3cn"] = new("暗黑破壞神III", "d3cn", "D3CN"),
+        ["aqua"] = new("Avowed", "aqua", "AQUA"),
+        ["s2"] = new("StarCraft II", "s2", "S2"),
+        ["w2"] = new("Warcraft II: Battle.net Edition", "w2bn", "W2"),
+        ["fenris"] = new("Diablo IV", "fenris", "Fen"),
+        ["d1"] = new("Diablo", "drtl", "D1"),
+        ["scor"] = new("Sea of Thieves", "scor", "SCOR"),
+        ["w3"] = new("Warcraft III: Reforged", "w3", "W3"),
+        ["fore"] = new("Call of Duty: Vanguard", "fore", "FORE"),
+        ["s1"] = new("StarCraft", "s1", "S1"),
+        ["osi"] = new("Diablo II: Resurrected", "osi", "OSI"),
+        ["lazarus"] = new("Call of Duty: MW2 Campaign Remastered", "lazarus", "LAZR"),
+        ["odin"] = new("Call of Duty: Modern Warfare", "odin", "ODIN"),
+        ["pinta"] = new("Call of Duty: Modern Warfare III", "pinta", "PNTA"),
+        ["prometheus"] = new("Overwatch", "pro", "Pro"),
+        ["viper"] = new("Call of Duty: Black Ops 4", "viper", "VIPR"),
+        ["zeus"] = new("Call of Duty: Black Ops Cold War", "zeus", "ZEUS"),
+        ["w1"] = new("Warcraft: Orcs & Humans", "war1", "W1"),
+        ["w2r"] = new("Warcraft II Remastered", "w2r", "W2R"),
+        ["hs_beta"] = new("Hearthstone", "hsb", "WTCG"),
+        ["lbra"] = new("Tony Hawk's Pro Skater 3+4", "lbra", "LBRA"),
+        ["ark"] = new("The Outer Worlds 2", "ark", "ARK"),
+        ["nina"] = new("Call of Duty: Modern Warfare II", "nina", "NINA"),
+        ["wow"] = new("World of Warcraft", "wow", "WoW"),
+        // Sources disagree (WoWC / wow_classic / WoW_wow_classic), so open the game page instead.
+        ["wow_classic"] = new("World of Warcraft Classic", "wow_classic", ""),
+        ["wow_classic_era"] = new("World of Warcraft Classic Era", "wow_classic_era", "wow_classic_era"),
     };
 
     private static readonly string[] IgnoredPrefixes =
     {
-        "agent", "agent_beta", "beta", "battle.net", "wow",
+        "agent", "beta", "battle.net",
+    };
+
+    /// <summary>WoW branches that are shippable products; every other <c>wow*</c> UID is PTR/beta.</summary>
+    private static readonly HashSet<string> WorldOfWarcraftUids = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "wow", "wow_classic", "wow_classic_era",
     };
 
     public static bool IsIgnoredUid(string uid)
-        => IgnoredPrefixes.Any(p => uid.StartsWith(p, StringComparison.OrdinalIgnoreCase));
+    {
+        if (IgnoredPrefixes.Any(p => uid.StartsWith(p, StringComparison.OrdinalIgnoreCase)))
+            return true;
+        if (uid.StartsWith("wow", StringComparison.OrdinalIgnoreCase))
+            return !WorldOfWarcraftUids.Contains(uid);
+        return false;
+    }
+
+    /// <summary>
+    /// Builds the client arguments for an installed product: a documented launch code starts the
+    /// game, a product code opens the game's Battle.net page, and neither launches the client.
+    /// </summary>
+    public static string LaunchOptionsFor(string uid, string productCode)
+    {
+        KnownGames.TryGetValue(uid, out var known);
+        if (known is { LauncherId.Length: > 0 })
+            return $"--exec=\"launch {known.LauncherId}\"";
+
+        var code = productCode.Trim();
+        if (code.Length == 0)
+            code = known?.ProductCode ?? "";
+        return code.Length > 0 ? $"--uri=\"battlenet://game/{code}\"" : "";
+    }
 
     private static ulong ReadVarint(byte[] buf, ref int pos)
     {
@@ -136,9 +181,12 @@ public static class BattleNetScanner
                 Encoding.UTF8.GetString(installPath));
     }
 
-    public static Dictionary<string, string> AggregateLogos(string agentDir)
+    /// <summary>Aggregate <c>installed[]</c> entry: artwork URL and display name.</summary>
+    public sealed record AggregateItem(string Logo, string Name);
+
+    public static Dictionary<string, AggregateItem> AggregateCatalog(string agentDir)
     {
-        var result = new Dictionary<string, string>();
+        var result = new Dictionary<string, AggregateItem>();
         var path = Path.Combine(agentDir, "aggregate.json");
         if (!File.Exists(path))
             return result;
@@ -151,8 +199,14 @@ public static class BattleNetScanner
             {
                 if (item.ValueKind != JsonValueKind.Object)
                     continue;
-                if (item.TryGetProperty("product_id", out var pid) && item.TryGetProperty("logo_art_uri", out var logo))
-                    result[pid.ToString()] = logo.ToString();
+                if (!item.TryGetProperty("product_id", out var pid))
+                    continue;
+                var id = pid.ToString();
+                if (id.Length == 0)
+                    continue;
+                var logo = item.TryGetProperty("logo_art_uri", out var art) ? art.ToString() : "";
+                var name = item.TryGetProperty("name", out var display) ? display.ToString() : "";
+                result[id] = new AggregateItem(logo, name);
             }
         }
         catch
@@ -161,6 +215,11 @@ public static class BattleNetScanner
         }
         return result;
     }
+
+    public static Dictionary<string, string> AggregateLogos(string agentDir)
+        => AggregateCatalog(agentDir)
+            .Where(pair => pair.Value.Logo.Length > 0)
+            .ToDictionary(pair => pair.Key, pair => pair.Value.Logo);
 
     public static string ProductDbPath()
     {
@@ -216,8 +275,8 @@ public static class BattleNetScanner
             return result;
         }
 
-        var logos = AggregateLogos(Path.GetDirectoryName(db)!);
-        var seen = new HashSet<string>(StringComparer.Ordinal);
+        var catalog = AggregateCatalog(Path.GetDirectoryName(db)!);
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         List<byte[]> installs;
         try
@@ -243,24 +302,35 @@ public static class BattleNetScanner
 
             if (info == null || !info.Value.Installed || IsIgnoredUid(info.Value.Uid))
                 continue;
-            if (!seen.Add(info.Value.Uid) || !KnownGames.ContainsKey(info.Value.Uid))
+            if (!seen.Add(info.Value.Uid))
                 continue;
 
             var folder = info.Value.InstallPath.Trim();
             if (folder.Length == 0 || !Directory.Exists(folder))
                 continue;
 
-            var (launcherId, title) = KnownGames[info.Value.Uid];
-            var cover = logos.TryGetValue(info.Value.ProductCode, out var logo)
-                ? logo
+            KnownGames.TryGetValue(info.Value.Uid, out var known);
+            var productCode = info.Value.ProductCode.Trim();
+            if (productCode.Length == 0)
+                productCode = known?.ProductCode ?? "";
+
+            catalog.TryGetValue(productCode, out var aggregate);
+            var title = known?.Title;
+            if (string.IsNullOrWhiteSpace(title))
+                title = aggregate?.Name;
+            if (string.IsNullOrWhiteSpace(title))
+                title = new DirectoryInfo(folder).Name;
+
+            var cover = aggregate is { Logo.Length: > 0 }
+                ? aggregate.Logo
                 : string.Format(HostedCover, info.Value.Uid);
 
             var g = new GameInfo
             {
-                Name = title,
+                Name = title!,
                 Exe = client,
                 StartDir = folder,
-                LaunchOptions = $"--exec=\"launch {launcherId}\"",
+                LaunchOptions = LaunchOptionsFor(info.Value.Uid, productCode),
                 Source = GameSource.BattleNet,
                 SourceId = info.Value.Uid,
                 Tags = { "Battle.net" },

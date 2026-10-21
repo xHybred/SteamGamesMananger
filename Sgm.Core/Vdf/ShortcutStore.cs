@@ -211,6 +211,28 @@ public static partial class ShortcutStore
         return doomed.Count;
     }
 
+    /// <summary>Remove shortcuts matching the given games (by AppName + Exe). Returns removed count.</summary>
+    public static int RemoveGames(Dictionary<string, object> data, IReadOnlyList<GameInfo> games)
+    {
+        var shortcuts = Shortcuts(data);
+        var targets = new HashSet<(string Name, string Exe)>();
+        foreach (var g in games)
+        {
+            g.Normalized();
+            targets.Add((g.Name, $"\"{g.Exe}\""));
+        }
+        var doomed = shortcuts
+            .Where(kv => kv.Value is Dictionary<string, object> e
+                && targets.Contains((
+                    e.TryGetValue("AppName", out var n) ? n?.ToString() ?? "" : "",
+                    e.TryGetValue("Exe", out var ex) ? ex?.ToString() ?? "" : "")))
+            .Select(kv => kv.Key)
+            .ToList();
+        foreach (var k in doomed)
+            shortcuts.Remove(k);
+        return doomed.Count;
+    }
+
     /// <summary>(AppName, Exe) pairs present in one shortcuts.vdf dict.</summary>
     public static HashSet<(string Name, string Exe)> InSteamSet(Dictionary<string, object> data)
     {

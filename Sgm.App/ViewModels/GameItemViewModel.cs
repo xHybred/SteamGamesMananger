@@ -21,6 +21,7 @@ public sealed partial class GameItemViewModel : ObservableObject
 
     [ObservableProperty] private bool _inSteam;
     [ObservableProperty] private bool _ownedOnSteam;
+    [ObservableProperty] private bool _isAdding;
     [ObservableProperty] private string _artStatus = "";
     [ObservableProperty] private string? _coverPath;
     [ObservableProperty] private BitmapImage? _coverImage;

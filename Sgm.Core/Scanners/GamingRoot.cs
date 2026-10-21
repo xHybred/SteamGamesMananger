@@ -183,6 +183,42 @@ public static class GamingRoot
         return result;
     }
 
+    /// <summary>
+    /// Identity names registered by GDK installs. This is the authoritative game list that
+    /// the AppX scan is intersected with, so Store apps and utilities never qualify.
+    /// </summary>
+    public static HashSet<string> InstalledIdentities()
+    {
+        var result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (!OperatingSystem.IsWindows() && !TestOverrideEnabled)
+            return result;
+
+        foreach (var root in TargetProvider())
+        {
+            IEnumerable<string> entries;
+            try
+            {
+                entries = Directory.EnumerateDirectories(root);
+            }
+            catch
+            {
+                continue;
+            }
+
+            foreach (var gameDir in entries)
+            {
+                var config = Path.Combine(gameDir, "Content", "MicrosoftGame.config");
+                if (!File.Exists(config))
+                    continue;
+                var identity = IdentityName(config);
+                if (identity.Length > 0)
+                    result.Add(identity);
+            }
+        }
+
+        return result;
+    }
+
     /// <summary>Unpackaged GDK games; identities in <paramref name="skipNames"/> are left out.</summary>
     public static List<GameInfo> ScanGamingRoots(IReadOnlySet<string>? skipNames = null)
     {

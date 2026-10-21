@@ -48,9 +48,9 @@ public sealed partial class AccountItemViewModel : ObservableObject
 }
 
 /// <summary>A grid row of tiles, so the grid ListBox can virtualize rows.</summary>
-public sealed class GameRowViewModel
+public sealed partial class GameRowViewModel : ObservableObject
 {
-    public IReadOnlyList<GameItemViewModel> Items { get; }
+    [ObservableProperty] private IReadOnlyList<GameItemViewModel> _items;
 
-    public GameRowViewModel(IReadOnlyList<GameItemViewModel> items) => Items = items;
+    public GameRowViewModel(IReadOnlyList<GameItemViewModel> items) => _items = items;
 }

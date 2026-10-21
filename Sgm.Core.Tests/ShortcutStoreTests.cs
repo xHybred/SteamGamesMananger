@@ -59,6 +59,23 @@ public class ShortcutStoreTests
     }
 
     [Fact]
+    public void RemoveGamesRemovesMatchingShortcuts()
+    {
+        var data = ShortcutStore.Empty();
+        var g = Game();
+        ShortcutStore.MergeGames(data, new[] { g }, overwrite: false);
+        var other = Game("Other", @"C:\other.exe");
+        ShortcutStore.MergeGames(data, new[] { other }, overwrite: false);
+
+        var removed = ShortcutStore.RemoveGames(data, new[] { g });
+        Assert.Equal(1, removed);
+        var shortcuts = (Dictionary<string, object>)data["shortcuts"];
+        Assert.Single(shortcuts);
+        var entry = (Dictionary<string, object>)shortcuts["1"];
+        Assert.Equal("Other", entry["AppName"]);
+    }
+
+    [Fact]
     public void WriteAndLoadRoundTripWithBackup()
     {
         var root = Path.Combine(Path.GetTempPath(), $"sgm-user-{Guid.NewGuid():N}");

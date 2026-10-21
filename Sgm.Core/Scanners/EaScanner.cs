@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text.Json;
+using Microsoft.Win32;
 using Sgm.Core.Models;
 using Sgm.Core.Text;
 using Sgm.Core.Utilities;
@@ -133,6 +134,11 @@ public static class EaScanner
             : new Dictionary<string, string>();
     }
 
+    public static bool IsEaUninstall(string uninstallString)
+        => !string.IsNullOrWhiteSpace(uninstallString)
+           && uninstallString.Contains("EAInstaller", StringComparison.OrdinalIgnoreCase)
+           && uninstallString.Contains("Cleanup.exe", StringComparison.OrdinalIgnoreCase);
+
     public static List<GameInfo> Scan()
     {
         var result = new List<GameInfo>();
@@ -140,40 +146,79 @@ public static class EaScanner
             return result;
 
         const string uninstall = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall";
-        foreach (var row in RegistryReader.Values(uninstall, "DisplayName", "InstallLocation"))
+        var seen = new HashSet<(string Name, string Folder)>();
+
+        foreach (var hive in new[] { RegistryHive.LocalMachine, RegistryHive.CurrentUser })
         {
-            var name = row.GetValueOrDefault("DisplayName", "").Trim();
-            var folder = row.GetValueOrDefault("InstallLocation", "").Trim().Trim('"');
-            if (name.Length == 0 || folder.Length == 0 || !Directory.Exists(folder))
-                continue;
-
-            var lowered = name.ToLowerInvariant();
-            if (lowered.Contains("ea app") || lowered.Contains("ea desktop") || lowered.Contains("origin"))
-                continue; // the launcher itself
-
-            if (!Directory.Exists(Path.Combine(folder, "EAInstaller")) && !File.Exists(Path.Combine(folder, "Cleanup.exe")))
-                continue;
-
-            var exe = UbisoftScanner.PickMainExe(folder);
-            if (exe == null)
-                continue;
-
-            var art = Art(name);
-            if (art.Count == 0)
-                art = ExeIconArt(exe);
-
-            var g = new GameInfo
+            foreach (var view in new[] { RegistryView.Registry32, RegistryView.Registry64 })
             {
-                Name = name,
-                Exe = exe,
-                StartDir = folder,
-                Source = GameSource.Ea,
-                SourceId = row.GetValueOrDefault("_key", ""),
-                Tags = { "EA" },
-            };
-            foreach (var (k, v) in art)
-                g.ArtUrls[k] = v;
-            result.Add(g);
+                RegistryKey? baseKey;
+                try
+                {
+                    baseKey = RegistryKey.OpenBaseKey(hive, view).OpenSubKey(uninstall);
+                }
+                catch
+                {
+                    continue;
+                }
+                if (baseKey == null)
+                    continue;
+
+                using (baseKey)
+                {
+                    foreach (var sub in baseKey.GetSubKeyNames())
+                    {
+                        try
+                        {
+                            using var key = baseKey.OpenSubKey(sub);
+                            if (key == null)
+                                continue;
+
+                            var name = key.GetValue("DisplayName")?.ToString()?.Trim() ?? "";
+                            var folder = (key.GetValue("InstallLocation")?.ToString() ?? "").Trim().Trim('"');
+                            var uninstallString = key.GetValue("UninstallString")?.ToString() ?? "";
+
+                            if (name.Length == 0 || folder.Length == 0 || !Directory.Exists(folder))
+                                continue;
+
+                            var lowered = name.ToLowerInvariant();
+                            if (lowered.Contains("ea app") || lowered.Contains("ea desktop") || lowered.Contains("origin"))
+                                continue; // the launcher itself
+
+                            if (!IsEaUninstall(uninstallString))
+                                continue;
+
+                            if (!seen.Add((name, folder)))
+                                continue;
+
+                            var exe = UbisoftScanner.PickMainExe(folder);
+                            if (exe == null)
+                                continue;
+
+                            var art = Art(name);
+                            if (art.Count == 0)
+                                art = ExeIconArt(exe);
+
+                            var g = new GameInfo
+                            {
+                                Name = name,
+                                Exe = exe,
+                                StartDir = folder,
+                                Source = GameSource.Ea,
+                                SourceId = sub,
+                                Tags = { "EA" },
+                            };
+                            foreach (var (k, v) in art)
+                                g.ArtUrls[k] = v;
+                            result.Add(g);
+                        }
+                        catch
+                        {
+                            // skip unreadable subkey
+                        }
+                    }
+                }
+            }
         }
 
         return result;

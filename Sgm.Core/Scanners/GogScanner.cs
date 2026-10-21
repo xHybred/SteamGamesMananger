@@ -93,6 +93,22 @@ public sealed class GogScanner : IScanner
         return rows;
     }
 
+    private static string CopyDbToTemp(string db)
+    {
+        try
+        {
+            var temp = Path.Combine(Path.GetTempPath(), $"sgm-gog-{Guid.NewGuid():N}.db");
+            using var src = new FileStream(db, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            using var dst = new FileStream(temp, FileMode.Create, FileAccess.Write);
+            src.CopyTo(dst);
+            return temp;
+        }
+        catch
+        {
+            return db;
+        }
+    }
+
     private static SqliteConnection OpenReadOnly(string path)
     {
         var cs = new SqliteConnectionStringBuilder
@@ -113,9 +129,10 @@ public sealed class GogScanner : IScanner
         if (!File.Exists(db))
             return rows;
 
+        var readDb = CopyDbToTemp(db);
         try
         {
-            using var con = OpenReadOnly(db);
+            using var con = OpenReadOnly(readDb);
             using var check = con.CreateCommand();
             check.CommandText = "SELECT name FROM sqlite_master WHERE type='table' AND name='LibraryReleases'";
             if (check.ExecuteScalar() == null)
@@ -138,6 +155,11 @@ public sealed class GogScanner : IScanner
         {
             // Unreadable / locked DB.
         }
+        finally
+        {
+            if (readDb != db)
+                try { File.Delete(readDb); } catch { }
+        }
 
         return rows;
     }
@@ -149,13 +171,16 @@ public sealed class GogScanner : IScanner
         if (!File.Exists(db))
             return art;
 
+        var readDb = CopyDbToTemp(db);
         SqliteConnection con;
         try
         {
-            con = OpenReadOnly(db);
+            con = OpenReadOnly(readDb);
         }
         catch (SqliteException)
         {
+            if (readDb != db)
+                try { File.Delete(readDb); } catch { }
             return art;
         }
 
@@ -252,6 +277,9 @@ public sealed class GogScanner : IScanner
             }
         }
 
+        if (readDb != db)
+            try { File.Delete(readDb); } catch { }
+
         return art;
     }
 
@@ -272,7 +300,7 @@ public sealed class GogScanner : IScanner
                 Name = gname.Trim().Length > 0 ? gname.Trim() : $"GOG {id}",
                 Exe = client,
                 StartDir = gpath.Trim(),
-                LaunchOptions = $"/command=runGame /gameId={id}",
+                LaunchOptions = $"/command=runGame /gameId={id} /path=\"{gpath.Trim()}\"",
                 Source = GameSource.Gog,
                 SourceId = id,
                 Tags = { "GOG" },

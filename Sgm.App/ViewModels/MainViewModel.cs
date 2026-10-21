@@ -31,6 +31,7 @@ public sealed partial class MainViewModel : ObservableObject
     public HelpViewModel HelpVm { get; }
 
     [ObservableProperty] private bool _steamRunning;
+    [ObservableProperty] private bool _steamMissing;
     [ObservableProperty] private string _themeName = "steam";
 
     public MainViewModel(SettingsStore store, AppSettings settings, ISnackbarService snackbar)
@@ -53,14 +54,31 @@ public sealed partial class MainViewModel : ObservableObject
 
     public async Task InitializeAsync()
     {
-        SteamDir = await Task.Run(() => SteamPaths.FindInstallDir(null));
-        if (SteamDir == null)
-            return;
+        Library.IsInitializing = true;
+        try
+        {
+            SteamDir = await Task.Run(() => SteamPaths.FindInstallDir(null));
+            if (SteamDir == null)
+            {
+                SteamMissing = true;
+                Sgm.Core.Logging.AppLog.Warn("Steam install not found; library scanning is unavailable.");
+                return;
+            }
 
-        await AccountsVm.LoadAsync();
-        RefreshSteamRunning();
-        _steamTimer.Start();
-        await Library.ScanAsync();
+            await AccountsVm.LoadAsync();
+            RefreshSteamRunning();
+            _steamTimer.Start();
+            await Library.ScanAsync();
+        }
+        catch (Exception ex)
+        {
+            Sgm.Core.Logging.AppLog.Error($"Initialization failed: {ex}");
+            Library.SummaryText = "Scan failed. See log for details.";
+        }
+        finally
+        {
+            Library.IsInitializing = false;
+        }
     }
 
     public void RefreshSteamRunning()

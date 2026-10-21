@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <Resource Include="Resources\sgm.ico" />
+    <Resource Include="Resources\sgm-logo.png" />
   </ItemGroup>
 
 </Project>

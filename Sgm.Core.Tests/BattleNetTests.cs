@@ -71,15 +71,70 @@ public class BattleNetTests
     [InlineData("agent")]
     [InlineData("agent_beta")]
     [InlineData("battle.net")]
-    [InlineData("wow")]
+    [InlineData("wow_beta")]
+    [InlineData("wowt")]
+    [InlineData("wow_classic_ptr")]
     public void IgnoredUidsAreDetected(string uid)
         => Assert.True(BattleNetScanner.IsIgnoredUid(uid));
+
+    [Theory]
+    [InlineData("wow")]
+    [InlineData("wow_classic")]
+    [InlineData("wow_classic_era")]
+    [InlineData("fenris")]
+    [InlineData("brand_new")]
+    public void ShippableUidsAreNotIgnored(string uid)
+        => Assert.False(BattleNetScanner.IsIgnoredUid(uid));
 
     [Fact]
     public void KnownGamesTableHasCoreTitles()
     {
         Assert.Equal("Diablo IV", BattleNetScanner.KnownGames["fenris"].Title);
+        Assert.Equal("fenris", BattleNetScanner.KnownGames["fenris"].ProductCode);
         Assert.Equal("rtro", BattleNetScanner.KnownGames["rtro"].LauncherId);
+        Assert.Equal("WoW", BattleNetScanner.KnownGames["wow"].LauncherId);
+    }
+
+    [Fact]
+    public void ConflictingLaunchCodesFallBackToGamePage()
+    {
+        Assert.Equal("", BattleNetScanner.KnownGames["wow_classic"].LauncherId);
+        Assert.Equal("--uri=\"battlenet://game/wow_classic\"", BattleNetScanner.LaunchOptionsFor("wow_classic", "wow_classic"));
+    }
+
+    [Fact]
+    public void DocumentedLaunchCodeUsesExec()
+        => Assert.Equal("--exec=\"launch Fen\"", BattleNetScanner.LaunchOptionsFor("fenris", "fenris"));
+
+    [Fact]
+    public void DocumentedLaunchCodeWinsOverProductCode()
+        => Assert.Equal("--exec=\"launch WoW\"", BattleNetScanner.LaunchOptionsFor("wow", "wow"));
+
+    [Fact]
+    public void UnknownProductUsesGamePage()
+        => Assert.Equal("--uri=\"battlenet://game/fenris\"", BattleNetScanner.LaunchOptionsFor("fenris-unknown", "fenris"));
+
+    [Fact]
+    public void UnknownProductWithoutCodeLaunchesClient()
+        => Assert.Equal("", BattleNetScanner.LaunchOptionsFor("fenris-unknown", ""));
+
+    [Fact]
+    public void AggregateCatalogReadsNames()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), $"sgm-bn-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(dir);
+        try
+        {
+            File.WriteAllText(Path.Combine(dir, "aggregate.json"),
+                "{\"installed\":[{\"product_id\":\"brand_new\",\"name\":\"Brand New Game\"}]}");
+            var catalog = BattleNetScanner.AggregateCatalog(dir);
+            Assert.Equal("Brand New Game", catalog["brand_new"].Name);
+            Assert.Empty(BattleNetScanner.AggregateLogos(dir));
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
     }
 
     [Fact]
