@@ -186,7 +186,7 @@ work, including [DLSS Swapper](https://github.com/beeradmoore/dlss-swapper) (GPL
 EA and Battle.net data formats. Review the relevant licenses before redistributing derived code
 or data.
 
-## Socials and support
+## Socials & Donations
 
 [Discord](https://discord.com/invite/dc74er8TJF) - [YouTube](https://www.youtube.com/c/Hybred) - [Twitter/X](https://x.com/TheHybred)
 
