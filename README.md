@@ -25,6 +25,8 @@ own files. A SteamGridDB key is optional, not required.
   to Xbox's `shell:AppsFolder` entries and Battle.net's direct launch codes.
 - **Configurability.** Hide a game and undo it with Ctrl+Z, or match different artwork at
   any time. Window size and layout are remembered between sessions.
+- **Self-updating.** Check for a new release from Settings, or let the app check on launch.
+  It downloads the setup executable, installs it silently, and reopens the app.
 
 ## Screenshots
 
@@ -91,9 +93,11 @@ needed when you want to choose custom artwork or fill gaps in the keyless catalo
 
 ## Getting started
 
-1. Download the latest release from
-   [Releases](https://github.com/xHybred/SteamGamesMananger/releases). The portable
-   `SteamGamesManager.exe` is self-contained and does not need a separate .NET install.
+1. Download `Steam-Games-Manager-Setup-<version>.exe` from
+   [Releases](https://github.com/xHybred/SteamGamesMananger/releases) and run it. Setup installs to
+   `C:\Program Files\Hybred Tools\Steam Games Mananger` and adds Start menu and optional desktop
+   shortcuts. The bundled `SteamGamesManager.exe` is self-contained and does not need a separate
+   .NET install.
 2. Close Steam. The status pill in the header turns green when it is safe to write.
 3. Enable the launchers you use in the sidebar.
 4. Press **Add All** to import every new game, or use the plus button on individual rows.
@@ -156,15 +160,32 @@ Outputs:
 - GUI: `Sgm.App\bin\Release\net10.0-windows\SteamGamesManager.exe`
 - CLI: `Sgm.Cli\bin\Release\net10.0-windows\sgm.exe`
 
-### Single-file release
+### Installer
 
-To produce one self-contained executable with the runtime and native libraries bundled:
+The release artifact is a single setup executable. Build it with Inno Setup 6:
 
 ```console
-dotnet publish Sgm.App\Sgm.App.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -p:PublishTrimmed=false -p:DebugType=None -p:DebugSymbols=false -o public-release
+powershell -ExecutionPolicy Bypass -File tools\build-installer.ps1
 ```
 
-The resulting `public-release\SteamGamesManager.exe` is the only file needed to run the app.
+The script publishes the self-contained single-file app to `publish\app`, then compiles
+`artifacts\installer\Steam-Games-Manager-Setup-<version>.exe`. The setup installs to
+`C:\Program Files\Hybred Tools\Steam Games Mananger`.
+
+To publish the app without the installer:
+
+```console
+dotnet publish Sgm.App\Sgm.App.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -p:PublishTrimmed=false -p:DebugType=None -p:DebugSymbols=false -o publish\app
+```
+
+The resulting `publish\app\SteamGamesManager.exe` is the only file the app needs; the installer wraps it.
+Keep `Version` in `Sgm.App\Sgm.App.csproj` and `AppVersion` in `installer\installer.iss` in sync
+for each release; the app compares its own version with the latest GitHub release tag. Updates
+run the setup silently, reuse the previous installation directory, and relaunch the app when
+finished.
+
+Installed copies keep `settings.json` in `%APPDATA%\SteamGamesManager` and logs and thumbnails in
+`%LOCALAPPDATA%\SteamGamesManager`, so reinstalling keeps your settings.
 
 ## Project layout
 
@@ -173,6 +194,8 @@ Sgm.App          WPF desktop application
 Sgm.Cli          Command-line interface (sgm)
 Sgm.Core         Scanners, artwork pipeline, Steam VDF writing
 Sgm.Core.Tests   Unit tests for the core library
+installer/       Inno Setup script and installer assets
+tools/           Build and icon scripts
 Sgm.slnx         Solution file
 ```
 

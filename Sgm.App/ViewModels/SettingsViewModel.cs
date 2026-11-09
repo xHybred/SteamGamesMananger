@@ -16,7 +16,13 @@ public sealed partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private bool _downloadArtwork = true;
     [ObservableProperty] private bool _overwriteShortcuts = true;
     [ObservableProperty] private bool _writeWhileSteamRunning;
+    [ObservableProperty] private bool _checkForUpdatesOnLaunch;
     [ObservableProperty] private string _hiddenCountText = "0 Hidden Game(s)";
+
+    public string CurrentVersionText => _shell.CurrentVersionText;
+    public string UpdateStatus => _shell.UpdateStatus;
+    public bool UpdateBusy => _shell.UpdateBusy;
+    public IAsyncRelayCommand CheckUpdatesCommand => _shell.CheckUpdatesCommand;
 
     public SettingsViewModel(MainViewModel shell)
     {
@@ -25,6 +31,15 @@ public sealed partial class SettingsViewModel : ObservableObject
         _downloadArtwork = shell.Settings.Artwork;
         _overwriteShortcuts = shell.Settings.Overwrite;
         _writeWhileSteamRunning = shell.Settings.Force;
+        _checkForUpdatesOnLaunch = shell.Settings.CheckForUpdatesOnLaunch;
+
+        _shell.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(MainViewModel.UpdateStatus))
+                OnPropertyChanged(nameof(UpdateStatus));
+            else if (e.PropertyName == nameof(MainViewModel.UpdateBusy))
+                OnPropertyChanged(nameof(UpdateBusy));
+        };
     }
 
     partial void OnApiKeyChanged(string value)
@@ -48,6 +63,12 @@ public sealed partial class SettingsViewModel : ObservableObject
     partial void OnWriteWhileSteamRunningChanged(bool value)
     {
         _shell.Settings.Force = value;
+        _shell.SaveSettings();
+    }
+
+    partial void OnCheckForUpdatesOnLaunchChanged(bool value)
+    {
+        _shell.Settings.CheckForUpdatesOnLaunch = value;
         _shell.SaveSettings();
     }
 

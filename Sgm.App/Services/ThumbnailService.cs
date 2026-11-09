@@ -3,6 +3,7 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
 using Sgm.Core.Artwork;
+using Sgm.Core.Configuration;
 using Sgm.Core.Models;
 using Sgm.Core.Steam;
 using Sgm.Core.Vdf;
@@ -17,9 +18,7 @@ public static class ThumbnailService
 {
     public static string CacheDir()
     {
-        var dir = Path.Combine(AppContext.BaseDirectory, ".sgm_cache");
-        Directory.CreateDirectory(dir);
-        return dir;
+        return AppPaths.CacheDirectory(".sgm_cache");
     }
 
     /// <summary>Best available cover path, or null. May download — call off the UI thread.</summary>

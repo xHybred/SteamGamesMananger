@@ -22,4 +22,20 @@ public sealed class DialogService
             return null;
         return (dialog.CandidateList.SelectedItem as MatchArtworkDialog.Candidate)?.Id;
     }
+
+    /// <summary>Prompts for an update, let the user download it, and returns the installer path.</summary>
+    public async Task<string?> ShowUpdateDialogAsync(
+        Version version, Func<IProgress<double>, Task<string>> download)
+    {
+        if (Application.Current?.MainWindow is not MainWindow main || main.RootDialogHost is null)
+            return null;
+
+        var dialog = new UpdateDialog(version, download)
+        {
+            DialogHostEx = main.RootDialogHost,
+        };
+
+        var result = await dialog.ShowAsync();
+        return result == ContentDialogResult.Primary ? dialog.InstallerPath : null;
+    }
 }

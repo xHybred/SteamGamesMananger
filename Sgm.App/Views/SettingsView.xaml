@@ -9,6 +9,7 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
             <StackPanel Grid.Row="0" Margin="0,0,0,14">
@@ -55,8 +56,32 @@
                 </StackPanel>
             </ui:Card>
 
+            <!-- Updates -->
+            <ui:Card Grid.Row="3" Style="{StaticResource SgmCard}" Margin="0,0,0,12">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource SectionTitle}" Text="Updates" Margin="0,0,0,10" />
+                    <CheckBox Style="{StaticResource SgmCheckBox}" Margin="0,0,0,10"
+                              IsChecked="{Binding CheckForUpdatesOnLaunch, Mode=TwoWay}"
+                              Content="Check for updates when the app starts" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <ui:Button Grid.Column="0" Style="{StaticResource SgmSecondaryButton}" Height="32"
+                                   Content="Check for updates" Command="{Binding CheckUpdatesCommand}" />
+                        <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Style="{StaticResource SmallMutedText}" Text="{Binding UpdateStatus}"
+                                       TextWrapping="Wrap" />
+                            <TextBlock Style="{StaticResource SmallMutedText}" Margin="0,2,0,0"
+                                       Text="{Binding CurrentVersionText}" />
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </ui:Card>
+
             <!-- Hidden -->
-            <ui:Card Grid.Row="3" Style="{StaticResource SgmCard}">
+            <ui:Card Grid.Row="4" Style="{StaticResource SgmCard}">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />

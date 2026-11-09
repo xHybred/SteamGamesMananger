@@ -25,8 +25,15 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
-            var crash = System.IO.Path.Combine(AppContext.BaseDirectory, "crash.log");
-            System.IO.File.WriteAllText(crash, ex.ToString());
+            try
+            {
+                var crash = AppPaths.DataFile("crash.log");
+                System.IO.File.WriteAllText(crash, ex.ToString());
+            }
+            catch
+            {
+                // Logging is best-effort; never mask the original startup error.
+            }
             AppLog.Error($"Startup failed: {ex}");
             MessageBox.Show(ex.ToString(), "Steam Games Manager — startup error",
                 MessageBoxButton.OK, MessageBoxImage.Error);
@@ -36,7 +43,7 @@ public partial class App : Application
 
     private void Start()
     {
-        var logPath = System.IO.Path.Combine(AppContext.BaseDirectory, "SteamGamesManager.log");
+        var logPath = AppPaths.DataFile("SteamGamesManager.log");
         AppLog.StartFile(logPath);
 
         _services = BuildServices();
@@ -48,7 +55,9 @@ public partial class App : Application
         MainWindow = window;
         window.Show();
 
-        _ = _services.GetRequiredService<MainViewModel>().InitializeAsync();
+        var viewModel = _services.GetRequiredService<MainViewModel>();
+        _ = viewModel.InitializeAsync();
+        _ = viewModel.CheckForUpdatesOnLaunchAsync();
 
         DispatcherUnhandledException += (_, args) =>
         {

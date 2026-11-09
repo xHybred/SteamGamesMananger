@@ -22,6 +22,7 @@ public class SettingsStoreTests
             [GameSource.Desktop] = true,
         }, d.Sources);
         Assert.True(d.Overwrite);
+        Assert.True(d.CheckForUpdatesOnLaunch);
         Assert.Equal("list", d.View);
         Assert.Equal("compact", d.Density);
         Assert.Equal("steam", d.Theme);
@@ -58,6 +59,7 @@ public class SettingsStoreTests
             state.Sources[GameSource.Epic] = false;
             state.Density = "normal";
             state.ApiKey = "abc";
+            state.CheckForUpdatesOnLaunch = false;
             state.Hidden.Add(new[] { "xbox", "VP9", "exe" });
             store.Save(state);
 
@@ -66,6 +68,7 @@ public class SettingsStoreTests
             Assert.False(back.Sources[GameSource.Xbox]);
             Assert.Equal("normal", back.Density);
             Assert.Equal("abc", back.ApiKey);
+            Assert.False(back.CheckForUpdatesOnLaunch);
             Assert.Single(back.Hidden);
             Assert.Equal(new[] { "xbox", "VP9", "exe" }, back.Hidden[0]);
         }

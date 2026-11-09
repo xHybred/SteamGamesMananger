@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Windows;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -19,6 +20,8 @@ public sealed partial class MainViewModel : ObservableObject
     private readonly SettingsStore _store;
     private readonly ISnackbarService _snackbar;
     private readonly DispatcherTimer _steamTimer;
+    private readonly UpdateService _updates = new();
+    private readonly DialogService _dialogs = new();
     private bool _steamBusy;
 
     public AppSettings Settings { get; }
@@ -33,6 +36,10 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool _steamRunning;
     [ObservableProperty] private bool _steamMissing;
     [ObservableProperty] private string _themeName = "steam";
+    [ObservableProperty] private bool _updateBusy;
+    [ObservableProperty] private string _updateStatus = "";
+
+    public string CurrentVersionText => UpdateService.CurrentVersion.ToString(3);
 
     public MainViewModel(SettingsStore store, AppSettings settings, ISnackbarService snackbar)
     {
@@ -47,6 +54,7 @@ public sealed partial class MainViewModel : ObservableObject
         HelpVm = new HelpViewModel();
 
         SettingsVm.SetHiddenCount(Settings.Hidden.Count);
+        UpdateStatus = $"Version {CurrentVersionText} is installed.";
 
         _steamTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
         _steamTimer.Tick += (_, _) => RefreshSteamRunning();
@@ -78,6 +86,83 @@ public sealed partial class MainViewModel : ObservableObject
         finally
         {
             Library.IsInitializing = false;
+        }
+    }
+
+    /// <summary>Check once per launch when the setting is enabled; failures stay silent.</summary>
+    public async Task CheckForUpdatesOnLaunchAsync()
+    {
+        if (!Settings.CheckForUpdatesOnLaunch)
+            return;
+
+        // Let the library scan and first paint finish before a modal prompt can appear.
+        await Task.Delay(2500);
+
+        if (!Settings.CheckForUpdatesOnLaunch)
+            return;
+
+        await CheckForUpdatesAsync(silent: true);
+    }
+
+    public async Task CheckForUpdatesAsync(bool silent)
+    {
+        if (UpdateBusy)
+            return;
+
+        UpdateBusy = true;
+        UpdateStatus = "Checking for updates...";
+
+        try
+        {
+            Sgm.Core.Logging.AppLog.Info(
+                $"Checking for updates (current version {CurrentVersionText}).");
+            var update = await _updates.CheckAsync();
+            if (update is null)
+            {
+                UpdateStatus = $"Version {CurrentVersionText} is up to date.";
+                if (!silent)
+                    Flash("You're on the latest version.");
+                return;
+            }
+
+            UpdateStatus = $"Version {update.Version.ToString(3)} is available.";
+            var installer = await _dialogs.ShowUpdateDialogAsync(
+                update.Version,
+                progress => _updates.DownloadAsync(update, progress));
+
+            if (installer is null)
+            {
+                UpdateStatus = $"Version {update.Version.ToString(3)} is available.";
+                return;
+            }
+
+            UpdateStatus = "Starting installer...";
+            Sgm.Core.Logging.AppLog.Info($"Launching update installer {installer}");
+            try
+            {
+                UpdateService.LaunchInstaller(installer);
+            }
+            catch (Exception ex)
+            {
+                UpdateStatus = "Could not start the installer.";
+                Sgm.Core.Logging.AppLog.Warn($"Could not start update installer: {ex.Message}");
+                if (!silent)
+                    Flash("Could not start the installer.", isError: true);
+                return;
+            }
+
+            Application.Current.Shutdown();
+        }
+        catch (Exception ex)
+        {
+            UpdateStatus = "Update check failed.";
+            Sgm.Core.Logging.AppLog.Warn($"Update check failed: {ex.Message}");
+            if (!silent)
+                Flash("Could not check for updates.", isError: true);
+        }
+        finally
+        {
+            UpdateBusy = false;
         }
     }
 
@@ -222,6 +307,14 @@ public sealed partial class MainViewModel : ObservableObject
             await Task.Delay(500);
         return SteamProcessGuard.IsSteamRunning() == running;
     }
+
+    [RelayCommand(CanExecute = nameof(CanCheckUpdates))]
+    private async Task CheckUpdates() => await CheckForUpdatesAsync(silent: false);
+
+    private bool CanCheckUpdates() => !UpdateBusy;
+
+    partial void OnUpdateBusyChanged(bool value) =>
+        CheckUpdatesCommand.NotifyCanExecuteChanged();
 
     [RelayCommand]
     private void ToggleTheme()

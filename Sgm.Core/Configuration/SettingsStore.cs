@@ -27,19 +27,17 @@ public sealed class SettingsStore
 
     public static string DefaultPath()
     {
+        // Installed copies live in Program Files, which must not hold per-user state
+        // even when the process happens to be elevated.
         var exeDir = AppContext.BaseDirectory;
-        if (IsWritable(exeDir))
+        if (!AppPaths.IsUnderProgramFiles(exeDir) && IsWritable(exeDir))
             return System.IO.Path.Combine(exeDir, FileName);
 
         var cwd = Directory.GetCurrentDirectory();
-        if (IsWritable(cwd))
+        if (!AppPaths.IsUnderProgramFiles(cwd) && IsWritable(cwd))
             return System.IO.Path.Combine(cwd, FileName);
 
-        var baseDir = Environment.GetEnvironmentVariable("APPDATA")
-            ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        var dir = System.IO.Path.Combine(baseDir, AppName);
-        Directory.CreateDirectory(dir);
-        return System.IO.Path.Combine(dir, FileName);
+        return System.IO.Path.Combine(AppPaths.UserDataDir(), FileName);
     }
 
     private static bool IsWritable(string dir)
@@ -110,6 +108,8 @@ public sealed class SettingsStore
         if (obj["artwork"] is JsonValue av && av.TryGetValue(out bool artwork)) state.Artwork = artwork;
         if (obj["overwrite"] is JsonValue ov && ov.TryGetValue(out bool overwrite)) state.Overwrite = overwrite;
         if (obj["force"] is JsonValue fv && fv.TryGetValue(out bool force)) state.Force = force;
+        if (obj["check_for_updates_on_launch"] is JsonValue cv && cv.TryGetValue(out bool checkForUpdates))
+            state.CheckForUpdatesOnLaunch = checkForUpdates;
 
         if (!ValidViews.Contains(state.View)) state.View = "list";
         if (!ValidThemes.Contains(state.Theme)) state.Theme = "steam";
@@ -158,6 +158,7 @@ public sealed class SettingsStore
             merged["artwork"] = state.Artwork;
             merged["overwrite"] = state.Overwrite;
             merged["force"] = state.Force;
+            merged["check_for_updates_on_launch"] = JsonValue.Create(state.CheckForUpdatesOnLaunch);
             merged["api_key"] = state.ApiKey;
             merged["theme"] = state.Theme;
             merged["window_width"] = JsonValue.Create(state.WindowWidth);

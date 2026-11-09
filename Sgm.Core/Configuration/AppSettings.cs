@@ -15,6 +15,7 @@ public sealed class AppSettings
     public string ApiKey { get; set; } = "";
     public List<string[]> Hidden { get; set; } = new();
     public string Theme { get; set; } = "steam";
+    public bool CheckForUpdatesOnLaunch { get; set; } = true;
     public double WindowWidth { get; set; } = 1120;
     public double WindowHeight { get; set; } = 760;
     public double? WindowLeft { get; set; }
