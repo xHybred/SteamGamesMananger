@@ -55,7 +55,8 @@ internal static class Program
 
         if (options.ShowVersion)
         {
-            Console.WriteLine("steam-games-manager (Sgm.Cli) 2.0");
+            var version = typeof(Program).Assembly.GetName().Version;
+            Console.WriteLine($"steam-games-manager (Sgm.Cli) {version?.ToString(3) ?? "unknown"}");
             return 0;
         }
 
@@ -292,6 +293,7 @@ internal static class Program
             "  --epic-manifests DIR   Override Epic Manifests dir\n" +
             "  --gog-db PATH          Override galaxy-2.0.db path\n" +
             "  --gui                  Launch the graphical interface\n" +
+            "  --version              Print the version\n" +
             "  -h, --help             Show this help\n");
     }
 }

@@ -9,7 +9,7 @@
     <RootNamespace>Sgm.App</RootNamespace>
     <AssemblyName>SteamGamesManager</AssemblyName>
     <ApplicationIcon>Resources\sgm.ico</ApplicationIcon>
-    <Version>1.2.0</Version>
+    <Version>1.2.1</Version>
   </PropertyGroup>
 
   <ItemGroup>

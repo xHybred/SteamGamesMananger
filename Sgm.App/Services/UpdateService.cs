@@ -51,7 +51,9 @@ public sealed class UpdateService
         if (!TryParseTag(release.TagName, out var latest) || latest <= CurrentVersion)
             return null;
 
-        var asset = release.Assets.FirstOrDefault(a => IsInstallerAsset(a.Name));
+        var asset =
+            release.Assets.FirstOrDefault(a => IsCanonicalInstallerAsset(a.Name)) ??
+            release.Assets.FirstOrDefault(a => IsInstallerAsset(a.Name));
         if (asset is null || !Uri.TryCreate(asset.BrowserDownloadUrl, UriKind.Absolute, out var downloadUrl))
         {
             AppLog.Warn($"Update {release.TagName} has no setup executable; ignoring it.");
@@ -74,6 +76,7 @@ public sealed class UpdateService
     {
         var directory = Path.Combine(Path.GetTempPath(), "SteamGamesManager", "updates");
         Directory.CreateDirectory(directory);
+        CleanupStaleDownloads(directory, update.AssetName);
 
         var destination = Path.Combine(directory, update.AssetName);
         var partial = destination + ".part";
@@ -178,9 +181,34 @@ public sealed class UpdateService
         return client;
     }
 
+    private static bool IsCanonicalInstallerAsset(string name) =>
+        name.StartsWith("Steam-Games-Manager-Setup-", StringComparison.OrdinalIgnoreCase) &&
+        name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase);
+
     private static bool IsInstallerAsset(string name) =>
         name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) &&
         name.Contains("setup", StringComparison.OrdinalIgnoreCase);
+
+    private static void CleanupStaleDownloads(string directory, string keepFileName)
+    {
+        try
+        {
+            foreach (var file in Directory.EnumerateFiles(directory))
+            {
+                var name = Path.GetFileName(file);
+                if (name.Equals(keepFileName, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                if (name.EndsWith(".part", StringComparison.OrdinalIgnoreCase) ||
+                    name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+                    File.Delete(file);
+            }
+        }
+        catch
+        {
+            // Best effort: an installer left running from a previous update may be locked.
+        }
+    }
 
     private static bool TryParseTag(string tag, out Version version)
     {

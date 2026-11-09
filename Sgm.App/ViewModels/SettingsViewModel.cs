@@ -1,6 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Sgm.App.Services;
 using Sgm.Core.Artwork;
 using Sgm.Core.Logging;
 

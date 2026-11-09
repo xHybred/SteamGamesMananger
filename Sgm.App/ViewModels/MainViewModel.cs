@@ -128,7 +128,7 @@ public sealed partial class MainViewModel : ObservableObject
             UpdateStatus = $"Version {update.Version.ToString(3)} is available.";
             var installer = await _dialogs.ShowUpdateDialogAsync(
                 update.Version,
-                progress => _updates.DownloadAsync(update, progress));
+                (progress, token) => _updates.DownloadAsync(update, progress, token));
 
             if (installer is null)
             {

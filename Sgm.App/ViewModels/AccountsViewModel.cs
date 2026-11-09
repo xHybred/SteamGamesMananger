@@ -76,6 +76,13 @@ public sealed partial class AccountsViewModel : ObservableObject
         if (steamDir == null)
             return;
 
+        _shell.RefreshSteamRunning();
+        if (_shell.SteamRunning && !_shell.Settings.Force)
+        {
+            _shell.Flash("Failed. Close Steam.", isError: true);
+            return;
+        }
+
         var accounts = _shell.CheckedAccountDirs();
         if (accounts.Count == 0)
             return;

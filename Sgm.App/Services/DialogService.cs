@@ -25,7 +25,7 @@ public sealed class DialogService
 
     /// <summary>Prompts for an update, let the user download it, and returns the installer path.</summary>
     public async Task<string?> ShowUpdateDialogAsync(
-        Version version, Func<IProgress<double>, Task<string>> download)
+        Version version, Func<IProgress<double>, CancellationToken, Task<string>> download)
     {
         if (Application.Current?.MainWindow is not MainWindow main || main.RootDialogHost is null)
             return null;

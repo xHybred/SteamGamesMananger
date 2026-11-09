@@ -29,7 +29,6 @@ public sealed class XboxScanner : IScanner
     private static List<JsonElement> QueryPackages()
     {
         var result = new List<JsonElement>();
-        Process proc;
         try
         {
             var psi = new ProcessStartInfo("powershell")
@@ -42,7 +41,7 @@ public sealed class XboxScanner : IScanner
             foreach (var arg in new[] { "-NoProfile", "-NonInteractive", "-Command", PowerQuery })
                 psi.ArgumentList.Add(arg);
 
-            proc = Process.Start(psi)!;
+            using var proc = Process.Start(psi)!;
             var stdout = proc.StandardOutput.ReadToEnd();
             proc.WaitForExit(120_000);
             if (proc.ExitCode != 0 || string.IsNullOrWhiteSpace(stdout))

@@ -7,12 +7,11 @@ using Sgm.Core.Models;
 namespace Sgm.Core.Configuration;
 
 /// <summary>
-/// JSON settings persistence next to the exe, with a %APPDATA% fallback.
-/// Tolerant of missing/corrupt files and unknown values.
+/// JSON settings persistence: next to a portable exe or in the working directory,
+/// with a %APPDATA% fallback. Tolerant of missing/corrupt files and unknown values.
 /// </summary>
 public sealed class SettingsStore
 {
-    public const string AppName = "SteamGamesManager";
     public const string FileName = "settings.json";
 
     private static readonly string[] ValidViews = { "list", "grid" };
@@ -28,7 +27,8 @@ public sealed class SettingsStore
     public static string DefaultPath()
     {
         // Installed copies live in Program Files, which must not hold per-user state
-        // even when the process happens to be elevated.
+        // even when the process happens to be elevated. A portable exe keeps its
+        // settings beside itself; the working directory is the next fallback.
         var exeDir = AppContext.BaseDirectory;
         if (!AppPaths.IsUnderProgramFiles(exeDir) && IsWritable(exeDir))
             return System.IO.Path.Combine(exeDir, FileName);

@@ -31,7 +31,7 @@ public static class SteamWriter
             catch (InvalidDataException ex)
             {
                 return new WriteResult(userDir, 0, 0, 0, 0, null,
-                    $"Corrupt shortcuts.vdf, skipped (restore from .bak): {ex.Message}");
+                    $"Corrupt shortcuts.vdf, skipped (restore from a shortcuts.vdf.bak-* backup): {ex.Message}");
             }
 
             var pruned = 0;

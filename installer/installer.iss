@@ -8,7 +8,7 @@
 ;   iscc installer\installer.iss
 
 #define AppName "Steam Games Manager"
-#define AppVersion "1.2.0"
+#define AppVersion "1.2.1"
 #define AppExe "SteamGamesManager.exe"
 
 ; Override with iscc /DSourceDir=..\publish\app to package a different publish folder.
@@ -34,7 +34,8 @@ CloseApplications=yes
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 UninstallDisplayIcon={app}\{#AppExe}
-VersionInfoVersion=1.2.0.0
+; AppVersion plus a fourth zero, so only AppVersion needs editing.
+VersionInfoVersion={#AppVersion}.0
 VersionInfoDescription={#AppName} setup
 
 [Files]

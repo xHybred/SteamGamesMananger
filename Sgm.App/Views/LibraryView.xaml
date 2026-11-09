@@ -59,7 +59,7 @@
 
                 <ui:Button Style="{StaticResource SgmPrimaryButton}" Height="30" Margin="8,0,0,0"
                            Command="{Binding AddAllNewCommand}"
-                           ToolTip="Add every new game to Steam">
+                           ToolTip="Add every new game in the current view to Steam">
                     <StackPanel Orientation="Horizontal">
                         <ui:SymbolIcon Symbol="Add24" FontSize="14"
                                        Visibility="{Binding IsAddingAll, Converter={StaticResource BoolToVis}, ConverterParameter=invert}" />

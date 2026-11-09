@@ -14,11 +14,14 @@ own files. A SteamGridDB key is optional, not required.
 ## Highlights
 
 - **One library, A to Z.** Every enabled storefront is merged into a single alphabetical list.
-- **One-click import.** Add a game individually or use Add All for everything new.
+- **One-click import.** Add a game individually or use Add All for every new game in the
+  current view.
 - **Artwork matching.** Covers, heroes, logos and icons are pulled from launcher caches,
-  keyless catalogs and the installed game itself. SteamGridDB can be added for custom art.
-- **Safe writes.** `shortcuts.vdf` is backed up before every change, and SGM refuses to write
-  while Steam is running unless you explicitly force it.
+  keyless catalogs and the installed game itself. A SteamGridDB key can be added to prefer
+  its artwork.
+- **Safe writes.** `shortcuts.vdf` is backed up before each write (when the file already
+  exists), and SGM refuses to add or remove shortcuts while Steam is running unless you
+  explicitly force it.
 - **Built for a large library.** Search, per-launcher filters, list and grid views, and three
   density levels keep hundreds of games manageable.
 - **Launch-aware shortcuts.** Each launcher gets the right command line, from Epic's URI protocol
@@ -26,7 +29,8 @@ own files. A SteamGridDB key is optional, not required.
 - **Configurability.** Hide a game and undo it with Ctrl+Z, or match different artwork at
   any time. Window size and layout are remembered between sessions.
 - **Self-updating.** Check for a new release from Settings, or let the app check on launch.
-  It downloads the setup executable, installs it silently, and reopens the app.
+  It downloads the setup executable (cancellable while downloading), installs it silently, and
+  reopens the app.
 
 ## Screenshots
 
@@ -38,7 +42,7 @@ own files. A SteamGridDB key is optional, not required.
 
 ![How Steam Games Manager works](docs/images/pipeline.png)
 
-1. SGM scans the launchers you enable using their local manifests, databases and install folders.
+1. SGM scans the supported launchers using their local manifests, databases and install folders.
 2. Games are deduplicated, sorted and matched with artwork.
 3. Shortcuts and grid images are written to your Steam userdata folder.
 4. Restart Steam and the games appear in your library alongside your Steam titles.
@@ -47,21 +51,23 @@ own files. A SteamGridDB key is optional, not required.
 
 | Launcher | Detection | Artwork |
 | --- | --- | --- |
-| **Epic Games** | `Manifests/*.item` plus `catcache.bin` | Catalog cache, then online search |
+| **Epic Games** | `Manifests/*.item` | `catcache.bin` catalog cache, then online search |
 | **GOG Galaxy** | Registry install path plus `galaxy-2.0.db` | Galaxy web cache, then catalog |
-| **Xbox / Game Pass** | AppX packages whose identity is registered in a `.GamingRoot` `MicrosoftGame.config` | `MicrosoftGame.config` art and package manifest logos |
-| **Ubisoft Connect** | Registry plus the local configurations cache | Ubisoft CDN thumbnails and logos |
-| **EA app** | Uninstall records plus a bundled title list | Title list, then the game's executable icon |
-| **Battle.net** | Agent `product.db` plus `aggregate.json` | Agent logos, then hosted covers |
-| **Desktop** | Win32 games outside any launcher manifest | Online lookup |
+| **Xbox / Game Pass** | AppX packages or GDK game folders registered by a `.GamingRoot` marker | `MicrosoftGame.config` art and package manifest logos |
+| **Ubisoft Connect** | Registry install records | Local configurations cache (Ubisoft CDN thumbnails and logos) |
+| **EA app** | Uninstall records | Bundled title list, then the game's executable icon |
+| **Battle.net** | Agent `product.db` | `aggregate.json` logos, then hosted covers |
+| **Desktop** | Installed Roblox Studio versions | Steam store artwork |
 
 ### Xbox and Game Pass
 
-Xbox games are only listed when Windows has registered them as real games: the package identity
-must match a `MicrosoftGame.config` inside an install folder recorded by a `.GamingRoot` drive
-marker. Frameworks, resource packages, and Microsoft Store apps without that registration are
-excluded, which keeps the list free of runtimes, codecs, language packs and storefront utilities.
-Titles launch through `explorer.exe shell:AppsFolder\...`, exactly like the Xbox app does.
+Packaged Xbox games are only listed when Windows has registered them as real games: the package
+identity must match a `MicrosoftGame.config` inside an install folder recorded by a `.GamingRoot`
+drive marker. Unpackaged GDK titles found through the same marker are listed directly. Frameworks,
+resource packages, and Microsoft Store apps without that registration are excluded, which keeps
+the list free of runtimes, codecs, language packs and storefront utilities. Packaged titles launch
+through `explorer.exe shell:AppsFolder\...`, exactly like the Xbox app does; unpackaged GDK titles
+launch their executable directly.
 
 ### Battle.net
 
@@ -85,11 +91,12 @@ Steam expects four image types per shortcut:
 | Cover | `<appid>p.jpg` | 600 x 900 |
 | Hero | `<appid>_hero.jpg` | 1920 x 620 |
 | Logo | `<appid>_logo.png` | Transparent PNG |
-| Icon | `<appid>.ico` | Multi-size icon |
+| Icon | `<appid>.ico` | 256 x 256 PNG |
 
-Local launcher art always wins. When only a square logo is available, SGM composes it over a
-blurred splash image so the result still fills a 600 x 900 cover. A SteamGridDB API key is only
-needed when you want to choose custom artwork or fill gaps in the keyless catalogs.
+Without a SteamGridDB key, local launcher art is used first and keyless catalogs and the Steam
+store fill the remaining types. With a key, SteamGridDB artwork takes priority and local or catalog
+art fills any gaps. When only a square logo is available, SGM composes it over a blurred splash
+image (or a dark backdrop) so the result still fills a 600 x 900 cover.
 
 ## Getting started
 
@@ -99,13 +106,14 @@ needed when you want to choose custom artwork or fill gaps in the keyless catalo
    shortcuts. The bundled `SteamGamesManager.exe` is self-contained and does not need a separate
    .NET install.
 2. Close Steam. The status pill in the header turns green when it is safe to write.
-3. Enable the launchers you use in the sidebar.
-4. Press **Add All** to import every new game, or use the plus button on individual rows.
+3. Choose the storefronts to show with the chips above the library list.
+4. Press **Add All** to import every new game in the current view, or use the plus button on
+   individual rows.
 5. Restart Steam. Your shortcuts and artwork are ready.
 
-If Steam is running, SGM still scans but will not write shortcuts unless the force option is
-enabled. Before each write it saves a timestamped backup next to `shortcuts.vdf`
-(`shortcuts.vdf.bak-<timestamp>`).
+If Steam is running, SGM still scans, but Add and Remove will not write shortcuts unless the
+force option is enabled. Before each write it saves a timestamped backup next to `shortcuts.vdf`
+(`shortcuts.vdf.bak-<timestamp>`) when the file already exists.
 
 ## Keyboard shortcuts
 
@@ -130,7 +138,7 @@ sgm --user-id 12345678 --force
 | --- | --- |
 | `--launchers <list>` | Comma-separated launchers to scan (`epic,gog,xbox,ubisoft,ea,battlenet,desktop`) |
 | `--steam-dir <path>` | Steam installation directory |
-| `--user-id <id>` | Steam userdata account to write to |
+| `--user-id <id>` | Steam userdata account to write to (repeatable) |
 | `--api-key <key>` | SteamGridDB key, or set `STEAMGRIDDB_API_KEY` |
 | `--no-artwork` | Skip artwork downloads and composition |
 | `--dry-run` | Report what would change without writing |
@@ -140,15 +148,16 @@ sgm --user-id 12345678 --force
 | `--include <text>` | Only import games whose name contains the text |
 | `--epic-manifests <path>` | Override the Epic manifests directory |
 | `--gog-db <path>` | Override the GOG Galaxy database path |
-| `--gui` | Launch the desktop interface |
+| `--gui` | Launch the desktop interface (its exe must sit beside `sgm.exe`) |
 | `--version` | Print the version |
 | `-h`, `--help` | Show help |
 
-Steam must be closed unless `--force` is used.
+Writing requires Steam to be closed unless `--force` is used.
 
 ## Building
 
-Requirements: Windows 10 or 11 and the .NET 10 SDK.
+Requirements: Windows 10 or 11 and the .NET 10 SDK. Building the installer also needs
+Inno Setup 6.
 
 ```console
 dotnet build Sgm.slnx -c Release
@@ -179,13 +188,15 @@ dotnet publish Sgm.App\Sgm.App.csproj -c Release -r win-x64 --self-contained tru
 ```
 
 The resulting `publish\app\SteamGamesManager.exe` is the only file the app needs; the installer wraps it.
-Keep `Version` in `Sgm.App\Sgm.App.csproj` and `AppVersion` in `installer\installer.iss` in sync
-for each release; the app compares its own version with the latest GitHub release tag. Updates
+Keep `Version` in `Sgm.App\Sgm.App.csproj` and `Sgm.Cli\Sgm.Cli.csproj`, and `AppVersion` in
+`installer\installer.iss`, in sync for each release. The setup file name and version are derived
+from `AppVersion`; the app compares its own version with the latest GitHub release tag. Updates
 run the setup silently, reuse the previous installation directory, and relaunch the app when
 finished.
 
 Installed copies keep `settings.json` in `%APPDATA%\SteamGamesManager` and logs and thumbnails in
-`%LOCALAPPDATA%\SteamGamesManager`, so reinstalling keeps your settings.
+`%LOCALAPPDATA%\SteamGamesManager`, so reinstalling keeps your settings. A portable copy that can
+write beside its executable keeps those files there instead.
 
 ## Project layout
 
@@ -194,7 +205,8 @@ Sgm.App          WPF desktop application
 Sgm.Cli          Command-line interface (sgm)
 Sgm.Core         Scanners, artwork pipeline, Steam VDF writing
 Sgm.Core.Tests   Unit tests for the core library
-installer/       Inno Setup script and installer assets
+docs/            Screenshots and README images
+installer/       Inno Setup script
 tools/           Build and icon scripts
 Sgm.slnx         Solution file
 ```

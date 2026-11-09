@@ -21,14 +21,6 @@ public sealed class SteamGridDbClient
     private const string Base = "https://www.steamgriddb.com/api/v2";
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(20);
 
-    private static readonly (string Kind, string Template)[] AssetFiles =
-    {
-        ("grids", "{0}p.jpg"),
-        ("heroes", "{0}_hero.jpg"),
-        ("logos", "{0}_logo.png"),
-        ("icons", "{0}.ico"),
-    };
-
     private readonly HttpClient _client;
 
     public string ApiKey { get; }
